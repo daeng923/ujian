@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live TV Dashboard - Jadwal Ujian</title>
+<style>
+  :root{
+    --bg:#0b1220;
+    --bg-2:#0f172a;
+    --panel:#151f36;
+    --panel-2:#1c2b4a;
+    --line: rgba(148,163,184,.16);
+    --line-strong: rgba(148,163,184,.28);
+    --text:#e6ebf5;
+    --text-dim:#93a3c0;
+    --accent:#3b82f6;
+    --accent-2:#facc15;
+    --ok:#22d3ee;
+    --danger:#fb7185;
+
+    /* ukuran fluid — mengikuti lebar & tinggi layar sekaligus (vmin) supaya konsisten di TV lebar maupun monitor biasa */
+    --fs-tiny: clamp(9px, 1.0vmin, 12px);
+    --fs-sm: clamp(11px, 1.2vmin, 15px);
+    --fs-md: clamp(12px, 1.5vmin, 18px);
+    --fs-lg: clamp(16px, 2.2vmin, 26px);
+    --fs-xl: clamp(22px, 3.2vmin, 38px);
+    --fs-xxl: clamp(26px, 4.4vmin, 54px);
+    --gap: clamp(8px, 1.3vmin, 20px);
+    --radius: clamp(8px, 1.1vmin, 18px);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg-2);
+    color:var(--text);
+    font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+    -webkit-user-select:none; user-select:none;
+    overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+
+  /* ================= HEADER ================= */
+  header{
+    background: rgba(6,11,22,.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    flex: 0 0 auto;
+    z-index: 20;
+  }
+  .header-inner{
+    padding: clamp(10px,1.6vh,22px) clamp(16px,2.6vw,44px);
+    display:flex; align-items:center; justify-content:space-between; gap: var(--gap);
+  }
+  .brand{ display:flex; align-items:center; gap: clamp(10px,1.4vw,20px); min-width:0; }
+  .brand-icon{
+    width: clamp(40px,5.4vmin,64px); height: clamp(40px,5.4vmin,64px);
+    background: linear-gradient(145deg,#2563eb,#1d4ed8);
+    border-radius: clamp(12px,1.6vmin,20px);
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid #60a5fa; box-shadow: 0 0 18px rgba(37,99,235,.55);
+    flex-shrink:0;
+    font-size: clamp(18px,2.6vmin,32px);
+  }
+  .brand-text h1{
+    margin:0; color:#fff; font-weight:900; letter-spacing:.12em; text-transform:uppercase;
+    font-size: clamp(15px, 2vmin, 26px); line-height:1.1; white-space:nowrap;
+  }
+  .live-pill{
+    margin-top: clamp(4px,.6vh,8px); display:flex; align-items:center; gap:8px;
+    color:#34d399; font-weight:800; text-transform:uppercase; letter-spacing:.18em;
+    font-size: var(--fs-sm);
+  }
+  .live-dot{
+    width: clamp(8px,1vmin,12px); height: clamp(8px,1vmin,12px); border-radius:50%;
+    background:#10b981; box-shadow:0 0 10px rgba(16,185,129,.9);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse{ 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.45; transform:scale(.75);} }
+
+  .filter-box{
+    display:flex; align-items:center; gap:10px;
+    background: var(--panel); border:1px solid var(--line-strong); border-radius: clamp(10px,1.2vmin,16px);
+    padding: clamp(4px,.6vh,8px) clamp(8px,1vw,14px);
+    flex-shrink:1; min-width:0;
+  }
+  .filter-box span{ font-size: var(--fs-tiny); font-weight:800; color:var(--text-dim); text-transform:uppercase; letter-spacing:.14em; white-space:nowrap; }
+  .filter-box select{
+    background: var(--bg); color: var(--accent-2); font-weight:900; text-transform:uppercase; letter-spacing:.06em;
+    border-radius: clamp(8px,1vmin,12px); border:1px solid var(--line-strong);
+    padding: clamp(6px,.9vh,10px) clamp(10px,1.2vw,16px);
+    font-size: var(--fs-md); outline:none; cursor:pointer; max-width: 34vw;
+  }
+
+  .clock{ text-align:right; flex-shrink:0; }
+  .clock .date{ display:block; font-weight:800; color:var(--text-dim); text-transform:uppercase; letter-spacing:.14em; font-size: var(--fs-sm); }
+  .clock .time{ font-weight:900; letter-spacing:-.02em; color:#fff; font-variant-numeric: tabular-nums; font-size: var(--fs-xl); text-shadow: 0 4px 18px rgba(0,0,0,.5); }
+
+  /* ================= MAIN ================= */
+  main{
+    flex:1 1 auto; min-height:0; position:relative;
+    background: var(--bg-2);
+    padding: var(--gap) clamp(16px,2.6vw,44px);
+    display:flex; flex-direction:column;
+  }
+
+  #loading-state, #empty-state{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background: var(--bg-2); z-index:10; gap: clamp(14px,2vh,26px); text-align:center; padding: 0 20px;
+  }
+  .spinner{ width: clamp(48px,7vmin,90px); height: clamp(48px,7vmin,90px); color:#3b82f6; animation: spin 1s linear infinite; }
+  @keyframes spin{ to{ transform: rotate(360deg);} }
+  #loading-state h2, #empty-state h2{
+    font-weight:900; text-transform:uppercase; letter-spacing:.16em; color:#64748b;
+    font-size: var(--fs-lg);
+  }
+  #empty-state .icon{ font-size: clamp(48px,8vmin,96px); opacity:.3; }
+
+  #board-container{
+    flex:1 1 auto; min-height:0;
+    display:grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-auto-rows: 1fr;
+    gap: var(--gap);
+  }
+  /* Layar sempit (laptop kecil, tablet) -> kurangi jumlah kolom biar kartu tidak dempet */
+  @media (max-width: 1300px){
+    #board-container{ grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 760px){
+    #board-container{ grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ================= CARD ================= */
+  .card{
+    background: var(--panel);
+    border:1px solid var(--line-strong);
+    border-radius: var(--radius);
+    display:flex; flex-direction:column;
+    overflow:hidden;
+    box-shadow: 0 20px 45px rgba(0,0,0,.35);
+    min-height:0;
+    opacity:0; transform: translateY(24px) scale(.96);
+    animation: popUp .6s cubic-bezier(.16,1,.3,1) forwards;
+  }
+  @keyframes popUp{ to{ opacity:1; transform:translateY(0) scale(1);} }
+
+  .card .room{
+    flex: 0 0 26%;
+    background: linear-gradient(160deg,#2563eb,#1d4ed8);
+    border-bottom: clamp(3px,.5vmin,7px) solid #1e40af;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    position:relative; overflow:hidden;
+    min-height: 0;
+  }
+  .card .room::after{ content:""; position:absolute; inset:0; background: linear-gradient(180deg, rgba(255,255,255,.12), transparent); }
+  .card .room .label{ font-size: var(--fs-tiny); font-weight:900; text-transform:uppercase; letter-spacing:.2em; color:#bfdbfe; position:relative; }
+  .card .room .value{
+    font-size: clamp(22px, 4vmin, 52px); font-weight:900; color:var(--accent-2); line-height:1; letter-spacing:-.03em;
+    text-shadow: 0 6px 14px rgba(0,0,0,.45); position:relative; margin-top:.1em;
+  }
+
+  .card .session{
+    flex: 0 0 16%;
+    background: rgba(3,7,18,.55);
+    border-bottom:1px solid var(--line);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:0;
+  }
+  .card .session .label{ font-size: var(--fs-tiny); font-weight:800; text-transform:uppercase; letter-spacing:.18em; color:var(--text-dim); }
+  .card .session .value{ font-size: var(--fs-lg); font-weight:900; color:var(--ok); letter-spacing:.03em; margin-top:.15em; }
+
+  .card .info{
+    flex: 1 1 auto;
+    padding: clamp(8px,1.4vmin,18px);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+    gap: clamp(6px,1vmin,12px);
+    min-height:0; overflow:hidden;
+  }
+  .card .info .matkul{
+    font-weight:900; color:#fff; line-height:1.25; font-size: var(--fs-md);
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .card .info .tag{
+    background: rgba(3,7,18,.6); border:1px solid var(--line); color:#cbd5e1;
+    font-weight:800; text-transform:uppercase; letter-spacing:.08em;
+    padding: clamp(4px,.6vmin,8px) clamp(10px,1.2vmin,16px);
+    border-radius: clamp(8px,1vmin,14px); font-size: var(--fs-tiny); white-space:nowrap;
+  }
+  .card .info .prodi{
+    font-size: var(--fs-tiny); font-weight:700; text-transform:uppercase; color:var(--text-dim);
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+
+  .card .pengawas{
+    flex: 0 0 34%;
+    background: rgba(3,7,18,.75);
+    border-top:2px solid var(--line);
+    position:relative;
+    padding-top: clamp(10px,1.4vmin,16px);
+    display:flex; flex-direction:column; align-items:center;
+    min-height:0; overflow:visible;
+  }
+  .pengawas-badge{
+    position:absolute; top: clamp(-13px,-1.7vmin,-9px); left:50%; transform: translateX(-50%);
+    background: var(--panel-2); color:#fff; font-size: var(--fs-tiny); font-weight:900; text-transform:uppercase;
+    letter-spacing:.14em; padding: clamp(3px,.5vmin,6px) clamp(10px,1.4vmin,18px); border-radius:999px;
+    border:1px solid var(--line-strong); box-shadow:0 4px 12px rgba(0,0,0,.4); white-space:nowrap;
+    z-index:2;
+  }
+  .pengawas-list{
+    width:100%; flex:1 1 auto; min-height:0; overflow-y:auto;
+    display:flex; flex-direction:column; align-items:center; gap: clamp(5px,.8vmin,10px);
+    padding: clamp(6px,.9vmin,10px) clamp(8px,1.2vmin,14px) clamp(4px,.6vmin,8px);
+    scrollbar-width:none;
+  }
+  .pengawas-list::-webkit-scrollbar{ display:none; }
+
+  .pengawas-chip{
+    width:96%; display:flex; align-items:center; gap: clamp(6px,1vmin,10px);
+    background: rgba(51,65,85,.55); border:1px solid rgba(148,163,184,.25);
+    border-radius: clamp(8px,1.1vmin,14px);
+    padding: clamp(5px,.9vmin,10px) clamp(8px,1.2vmin,14px);
+    transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+    cursor:default;
+  }
+  .pengawas-chip:hover{
+    transform: translateY(-2px) scale(1.03);
+    background: rgba(59,130,246,.22);
+    border-color: rgba(96,165,250,.7);
+    box-shadow: 0 8px 18px rgba(37,99,235,.35);
+  }
+  .pengawas-avatar{
+    flex-shrink:0;
+    width: clamp(20px,2.6vmin,32px); height: clamp(20px,2.6vmin,32px); border-radius:50%;
+    background: linear-gradient(145deg,#3b82f6,#1d4ed8);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; color:#fff; font-size: var(--fs-tiny);
+  }
+  .pengawas-name{
+    font-weight:800; color:#fff; font-size: var(--fs-sm);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;
+  }
+  .pengawas-kosong{
+    background: rgba(251,113,133,.1); border:1px dashed rgba(251,113,133,.4); color:#fca5a5;
+    font-weight:800; font-style:italic; font-size: var(--fs-sm);
+    padding: clamp(6px,1vmin,10px) clamp(10px,1.4vmin,16px); border-radius: clamp(8px,1.1vmin,14px); width:96%; text-align:center;
+  }
+
+  /* ================= FOOTER ================= */
+  footer{
+    flex:0 0 auto; background: var(--bg); border-top:1px solid var(--line); position:relative; z-index:20;
+  }
+  #progress-bar-track{ height: clamp(3px,.5vmin,6px); width:100%; background:#1e293b; }
+  #progress-bar{ height:100%; width:0; background: linear-gradient(90deg,#3b82f6,#60a5fa); box-shadow:0 0 12px rgba(59,130,246,.9); }
+  .footer-inner{
+    padding: clamp(8px,1.2vh,16px) clamp(16px,2.6vw,44px);
+    display:flex; align-items:center; justify-content:space-between; gap: var(--gap);
+  }
+  .footer-left{ display:flex; align-items:center; gap: clamp(10px,1.4vw,18px); flex-wrap:wrap; }
+  .footer-left span{ font-size: var(--fs-tiny); font-weight:900; color:var(--text-dim); text-transform:uppercase; letter-spacing:.14em; }
+  .footer-left b{ color:#fff; font-size: var(--fs-sm); }
+  #foot-paging{
+    font-size: var(--fs-sm); font-weight:900; color:#0b1220; text-transform:uppercase; letter-spacing:.1em;
+    background: var(--accent-2); padding: clamp(6px,.9vh,10px) clamp(14px,1.8vw,22px); border-radius: clamp(8px,1.1vmin,14px);
+    box-shadow:0 0 12px rgba(250,204,21,.3); white-space:nowrap;
+  }
+
+  .progress-active{ animation: progress 10s linear forwards; }
+  @keyframes progress{ from{width:0%;} to{width:100%;} }
+
+  /* ================= NAV BUTTONS ================= */
+  .nav-btn{
+    position:absolute; top:50%; transform: translateY(-50%);
+    width: clamp(38px,5vmin,64px); height: clamp(38px,5vmin,64px);
+    border-radius:50%; border:1px solid rgba(255,255,255,.18);
+    background: rgba(15,23,42,.45); backdrop-filter: blur(6px);
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; z-index:15;
+    opacity:0; pointer-events:none;
+    transition: opacity .35s ease, background .2s ease, transform .2s ease;
+  }
+  .nav-btn svg{ width:46%; height:46%; }
+  .nav-btn:hover{ background: rgba(59,130,246,.55); border-color: rgba(96,165,250,.8); }
+  .nav-btn:active{ transform: translateY(-50%) scale(.92); }
+  .nav-prev{ left: clamp(8px,1.4vw,26px); }
+  .nav-next{ right: clamp(8px,1.4vw,26px); }
+  main.show-nav .nav-btn.is-enabled{ opacity:1; pointer-events:auto; }
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">🎓</div>
+        <div class="brand-text">
+          <h1>Status Pengawasan Ujian</h1>
+          <p class="live-pill"><span class="live-dot"></span>Siaran Informasi Langsung (Live)</p>
+        </div>
+      </div>
+
+      <div class="filter-box">
+        <span>📅 Filter Hari</span>
+        <select id="filter-hari" onchange="applyDayFilter()">
+          <option value="">-- Menunggu Database --</option>
+        </select>
+      </div>
+
+      <div class="clock">
+        <span id="live-date" class="date">Memuat...</span>
+        <span id="live-time" class="time">00:00:00</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="loading-state">
+      <svg class="spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle opacity=".25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path opacity=".75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <h2>Menyinkronkan Server...</h2>
+    </div>
+
+    <div id="empty-state" style="display:none;">
+      <div class="icon">📅</div>
+      <h2>Tidak Ada Jadwal Pengawasan Hari Ini</h2>
+    </div>
+
+    <div id="board-container"></div>
+
+    <button type="button" class="nav-btn nav-prev" id="btn-prev" aria-label="Halaman sebelumnya">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+    <button type="button" class="nav-btn nav-next" id="btn-next" aria-label="Halaman berikutnya">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </button>
+  </main>
+
+  <footer>
+    <div id="progress-bar-track"><div id="progress-bar"></div></div>
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span>Total Ruang: <b id="foot-total">0</b></span>
+        <span>Menampilkan Jadwal Terverifikasi</span>
+      </div>
+      <div id="foot-paging">Halaman 1 dari 1</div>
+    </div>
+  </footer>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwfb_SBIWtuC6s5CdaXPN-GEo7HmFEoTKmXF0HBX2IOkRCNPTlIFuVW50FvrSA14ihJlw/exec";
+
+    let database = { config: {}, pengawas: [], jadwal: [] };
+    let liveJadwal = [];
+
+    const ITEMS_PER_PAGE = 10;
+    const SLIDE_DURATION = 10000;
+
+    let currentPage = 1;
+    let totalPages = 1;
+    let slideInterval = null;
+
+    function updateClock() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('live-time').innerText = `${hours}:${minutes}:${seconds}`;
+
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('live-date').innerText = now.toLocaleDateString('id-ID', options);
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    async function fetchBoardData() {
+      try {
+        const res = await fetch(`${API_URL}?action=getData`);
+        const result = await res.json();
+
+        if (result.status === "success") {
+          database = result;
+          const publishedJadwal = database.jadwal.filter(j => j.status && j.status.toLowerCase() === 'published');
+
+          buildHariDropdown(publishedJadwal);
+          applyDayFilter(publishedJadwal);
+        }
+      } catch (err) {
+        console.error("Gagal sinkronisasi data.");
+      }
+    }
+
+    function buildHariDropdown(publishedJadwal) {
+      const selectHari = document.getElementById('filter-hari');
+      const currentVal = selectHari.value;
+
+      selectHari.innerHTML = '<option value="">-- Pilih Hari --</option>';
+      const hariUnik = [...new Set(publishedJadwal.map(j => j.hari_tanggal.replace(/\n/g, ' ').trim()))];
+
+      hariUnik.forEach(hari => {
+        if (hari) {
+          const opt = document.createElement('option');
+          opt.value = hari; opt.textContent = hari;
+          selectHari.appendChild(opt);
+        }
+      });
+
+      if (currentVal === "" && hariUnik.length > 0) {
+        selectHari.value = hariUnik[0];
+      } else if (hariUnik.includes(currentVal)) {
+        selectHari.value = currentVal;
+      }
+    }
+
+    function applyDayFilter(publishedJadwalParam = null) {
+      const sourceData = publishedJadwalParam || database.jadwal.filter(j => j.status && j.status.toLowerCase() === 'published');
+      const selectedHari = document.getElementById('filter-hari').value;
+
+      liveJadwal = sourceData.filter(j => j.hari_tanggal.replace(/\n/g, ' ').trim() === selectedHari);
+
+      liveJadwal.sort((a, b) => {
+        if (a.jam < b.jam) return -1;
+        if (a.jam > b.jam) return 1;
+        if (a.ruang < b.ruang) return -1;
+        if (a.ruang > b.ruang) return 1;
+        return 0;
+      });
+
+      document.getElementById('foot-total').innerText = liveJadwal.length;
+
+      clearInterval(slideInterval);
+
+      const emptyState = document.getElementById('empty-state');
+      const loadingState = document.getElementById('loading-state');
+      loadingState.style.display = 'none';
+
+      if (liveJadwal.length === 0) {
+        emptyState.style.display = 'flex';
+        document.getElementById('board-container').innerHTML = "";
+        document.getElementById('foot-paging').innerText = "KOSONG";
+        resetProgressBar();
+        updateNavButtonsVisibility();
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      totalPages = Math.ceil(liveJadwal.length / ITEMS_PER_PAGE);
+      currentPage = 1;
+
+      renderCurrentPage();
+
+      if (totalPages > 1) {
+        startSlideshow();
+      } else {
+        document.getElementById('progress-bar').classList.remove('progress-active');
+        document.getElementById('progress-bar').style.width = '100%';
+      }
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str ?? '';
+      return div.innerHTML;
+    }
+
+    function initials(nama) {
+      const parts = nama.trim().split(/\s+/).filter(Boolean);
+      if (parts.length === 0) return "?";
+      if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+
+    function renderCurrentPage() {
+      const container = document.getElementById('board-container');
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      const endIndex = startIndex + ITEMS_PER_PAGE;
+      const pageData = liveJadwal.slice(startIndex, endIndex);
+
+      container.innerHTML = "";
+
+      pageData.forEach((j, index) => {
+        const kodes = j.kode_pengawas.split(',').map(k => k.trim());
+        let partnerHtml = "";
+
+        if (kodes.length > 0 && kodes[0] !== "") {
+          partnerHtml = kodes.map(k => {
+            const p = database.pengawas.find(x => x.kode === k);
+            const namaLengkap = p ? p.nama : "Tanpa Nama";
+            const namaSingkat = namaLengkap.split(',')[0];
+            return `
+              <div class="pengawas-chip" title="${escapeHtml(namaLengkap)}">
+                <div class="pengawas-avatar">${escapeHtml(initials(namaSingkat))}</div>
+                <span class="pengawas-name">${escapeHtml(namaSingkat)}</span>
+              </div>
+            `;
+          }).join('');
+        } else {
+          partnerHtml = `<div class="pengawas-kosong">Belum Ditugaskan</div>`;
+        }
+
+        const jamLabel = j.jam.split(' ')[0];
+        const jamRange = j.jam.substring(j.jam.indexOf('(') + 1, j.jam.indexOf(')'));
+
+        const card = document.createElement('div');
+        card.className = "card";
+        card.style.animationDelay = `${index * 0.12}s`;
+
+        card.innerHTML = `
+          <div class="room">
+            <span class="label">Ruangan</span>
+            <span class="value">${escapeHtml(j.ruang)}</span>
+          </div>
+
+          <div class="session">
+            <span class="label">Sesi ${escapeHtml(jamLabel)}</span>
+            <span class="value">${escapeHtml(jamRange)}</span>
+          </div>
+
+          <div class="info">
+            <div class="matkul">${escapeHtml(j.mata_kuliah)}</div>
+            <span class="tag">KLS: ${escapeHtml(j.kelas)}</span>
+            <span class="prodi">${escapeHtml(j.program_studi)}</span>
+          </div>
+
+          <div class="pengawas">
+            <span class="pengawas-badge">Pengawas Bertugas</span>
+            <div class="pengawas-list">${partnerHtml}</div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      document.getElementById('foot-paging').innerText = `Halaman ${currentPage} dari ${totalPages}`;
+      updateNavButtonsVisibility();
+
+      if (totalPages > 1) {
+        resetProgressBar();
+        requestAnimationFrame(() => {
+          document.getElementById('progress-bar').classList.add('progress-active');
+        });
+      }
+    }
+
+    function startSlideshow() {
+      slideInterval = setInterval(() => {
+        currentPage++;
+        if (currentPage > totalPages) currentPage = 1;
+        renderCurrentPage();
+      }, SLIDE_DURATION);
+    }
+
+    function restartSlideshow() {
+      clearInterval(slideInterval);
+      if (totalPages > 1) startSlideshow();
+    }
+
+    function goToNextPage() {
+      if (totalPages <= 1) return;
+      currentPage = currentPage >= totalPages ? 1 : currentPage + 1;
+      renderCurrentPage();
+      restartSlideshow();
+    }
+
+    function goToPrevPage() {
+      if (totalPages <= 1) return;
+      currentPage = currentPage <= 1 ? totalPages : currentPage - 1;
+      renderCurrentPage();
+      restartSlideshow();
+    }
+
+    function updateNavButtonsVisibility() {
+      const enabled = totalPages > 1;
+      document.getElementById('btn-prev').classList.toggle('is-enabled', enabled);
+      document.getElementById('btn-next').classList.toggle('is-enabled', enabled);
+    }
+
+    // Tombol prev/next: transparan, auto-hide setelah beberapa detik tanpa aktivitas mouse/sentuhan
+    const mainEl = document.querySelector('main');
+    let navHideTimer = null;
+    function revealNavButtons() {
+      mainEl.classList.add('show-nav');
+      clearTimeout(navHideTimer);
+      navHideTimer = setTimeout(() => mainEl.classList.remove('show-nav'), 2800);
+    }
+    mainEl.addEventListener('mousemove', revealNavButtons);
+    mainEl.addEventListener('mouseenter', revealNavButtons);
+    mainEl.addEventListener('touchstart', revealNavButtons, { passive: true });
+    mainEl.addEventListener('click', revealNavButtons);
+
+    document.getElementById('btn-prev').addEventListener('click', (e) => { e.stopPropagation(); goToPrevPage(); revealNavButtons(); });
+    document.getElementById('btn-next').addEventListener('click', (e) => { e.stopPropagation(); goToNextPage(); revealNavButtons(); });
+
+    function resetProgressBar() {
+      const pb = document.getElementById('progress-bar');
+      pb.classList.remove('progress-active');
+      void pb.offsetWidth;
+      pb.style.width = '0%';
+    }
+
+    fetchBoardData();
+    setInterval(() => fetchBoardData(), 300000);
+  </script>
+</body>
+</html>
