@@ -7,16 +7,15 @@
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <style>
     body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
-    /* Menyembunyikan scrollbar untuk menu pil filter harian */
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
-    /* Pengaturan Cetak PDF: Otomatis membuka semua partner list dan menyembunyikan elemen UI interaktif */
+    /* Pengaturan Cetak PDF: Otomatis membuka semua Rincian agar tercetak penuh */
     @media print { 
       .no-print { display: none !important; } 
       .print-area { width: 100%; }
-      .partner-list { display: block !important; }
-      .partner-toggle-btn { display: none !important; }
+      .detail-body { display: block !important; }
+      .detail-toggle-icon { display: none !important; }
     }
   </style>
 </head>
@@ -46,11 +45,19 @@
 
   <main class="max-w-md mx-auto px-4 py-5">
     
-    <div class="bg-white rounded-2xl shadow-sm p-4 mb-5 no-print border border-slate-200">
-      <label for="select-pengawas" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">🔍 Identitas Anda</label>
-      <select id="select-pengawas" disabled class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl p-3.5 text-slate-900 font-bold text-sm focus:outline-hidden focus:border-blue-500 focus:ring-0 transition-all cursor-not-allowed opacity-50 appearance-none">
-        <option value="">-- Memuat Database... --</option>
-      </select>
+    <div class="bg-white rounded-2xl shadow-sm p-4 mb-5 no-print border border-slate-200 relative z-30">
+      <label for="search-pengawas" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">🔍 Identitas Anda</label>
+      
+      <div class="relative">
+        <input type="text" id="search-pengawas" disabled autocomplete="off" placeholder="Sedang memuat database..." 
+          class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl p-3.5 text-slate-900 font-bold text-sm focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all cursor-not-allowed opacity-50">
+        
+        <button id="btn-clear" onclick="resetSearch()" class="hidden absolute right-3 top-3.5 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full w-6 h-6 flex items-center justify-center font-black cursor-pointer">✕</button>
+
+        <div id="autocomplete-results" class="hidden absolute left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto overflow-x-hidden flex-col divide-y divide-slate-100">
+          </div>
+      </div>
+      <p class="text-[9px] text-slate-400 mt-2 font-medium px-1">*Ketik minimal 3 huruf nama/kode Anda.</p>
     </div>
 
     <div id="jadwal-section" class="hidden print-area">
@@ -61,7 +68,7 @@
             <span id="inisial-nama">P</span>
           </div>
           <div>
-            <h2 id="nama-terpilih" class="text-sm font-black text-slate-900 leading-tight">Nama</h2>
+            <h2 id="nama-terpilih" class="text-sm font-black text-slate-900 leading-tight truncate max-w-[200px]">Nama</h2>
             <p id="kode-terpilih" class="text-[10px] font-bold text-blue-600 mt-0.5">KID: -</p>
           </div>
         </div>
@@ -79,7 +86,7 @@
           </div>
       </div>
 
-      <div id="container-kartu" class="space-y-4">
+      <div id="container-kartu" class="space-y-3">
         </div>
     </div>
 
@@ -88,7 +95,7 @@
         <span class="text-4xl">👋</span>
       </div>
       <h3 class="text-base font-black text-slate-700 mb-1">Selamat Datang, Pengawas!</h3>
-      <p class="text-xs font-medium max-w-[250px] leading-relaxed text-slate-500">Pilih nama Anda di atas untuk melihat alokasi jadwal dan rekan partner ruangan.</p>
+      <p class="text-xs font-medium max-w-[250px] leading-relaxed text-slate-500">Ketik nama Anda di kolom atas untuk melihat alokasi jadwal mengawas secara instan.</p>
     </div>
   </main>
 
@@ -96,8 +103,8 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbwfb_SBIWtuC6s5CdaXPN-GEo7HmFEoTKmXF0HBX2IOkRCNPTlIFuVW50FvrSA14ihJlw/exec";
 
     let database = { config: {}, pengawas: [], jadwal: [] };
-    let currentJadwalFiltered = []; // Menyimpan jadwal aktif milik pengawas
-    let currentUserKode = "";       // Menyimpan kode pengawas yang sedang login
+    let currentJadwalFiltered = []; 
+    let currentUserKode = "";       
 
     document.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -109,19 +116,18 @@
     }
 
     async function fetchPortalData() {
-      toggleLoading(true, "Sinkronisasi Database...");
+      toggleLoading(true, "Menghubungkan ke Server...");
       try {
         const res = await fetch(`${API_URL}?action=getData`);
         const result = await res.json();
         
         if(result.status === "success") {
           database = result;
-          renderDropdown();
           
-          const selectEl = document.getElementById('select-pengawas');
-          selectEl.disabled = false;
-          selectEl.classList.remove('cursor-not-allowed', 'opacity-50');
-          selectEl.classList.add('cursor-pointer');
+          const searchInput = document.getElementById('search-pengawas');
+          searchInput.disabled = false;
+          searchInput.placeholder = "Ketik min. 3 huruf nama Anda...";
+          searchInput.classList.remove('cursor-not-allowed', 'opacity-50');
 
           if(database.config.current_semester) {
             document.getElementById('semester-title').innerText = database.config.current_semester;
@@ -131,37 +137,83 @@
       finally { toggleLoading(false); }
     }
 
-    function renderDropdown() {
-      const select = document.getElementById('select-pengawas');
-      select.innerHTML = '<option value="">-- Ketuk & Pilih Nama Anda --</option>';
-      database.pengawas.sort((a,b) => a.nama.localeCompare(b.nama));
-      database.pengawas.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.kode; opt.textContent = `${p.nama}`;
-        select.appendChild(opt);
-      });
-    }
+    // ================= FUNGSI AUTOCOMPLETE PENCARIAN PENGAWAS =================
+    const searchInput = document.getElementById('search-pengawas');
+    const resultsBox = document.getElementById('autocomplete-results');
+    const btnClear = document.getElementById('btn-clear');
 
-    document.getElementById('select-pengawas').addEventListener('change', function(e) {
-      currentUserKode = e.target.value;
-      if(!currentUserKode) {
-        document.getElementById('jadwal-section').classList.add('hidden');
-        document.getElementById('empty-state').classList.remove('hidden');
+    searchInput.addEventListener('input', function(e) {
+      const keyword = e.target.value.toLowerCase().trim();
+      
+      // Munculkan tombol clear jika ada isinya
+      if(keyword.length > 0) btnClear.classList.remove('hidden');
+      else btnClear.classList.add('hidden');
+
+      // Syarat minimal 3 huruf agar performa ringan
+      if(keyword.length < 3) {
+        resultsBox.classList.add('hidden');
         return;
       }
+
+      // Filter database
+      const matched = database.pengawas.filter(p => 
+        p.nama.toLowerCase().includes(keyword) || p.kode.includes(keyword)
+      );
+
+      resultsBox.innerHTML = "";
+      
+      if(matched.length === 0) {
+        resultsBox.innerHTML = `<div class="p-4 text-center text-xs font-bold text-slate-400">Tidak ada pengawas bernama "${keyword}"</div>`;
+      } else {
+        matched.forEach(p => {
+          resultsBox.innerHTML += `
+            <div onclick="eksekusiPilihPengawas('${p.kode}', '${p.nama.replace(/'/g, "\\'")}')" 
+                 class="p-3.5 hover:bg-blue-50 active:bg-blue-100 cursor-pointer transition-colors flex flex-col gap-0.5">
+              <span class="font-bold text-slate-800 text-sm">${p.nama}</span>
+              <span class="text-[10px] font-bold text-slate-400">Kode Pengawas: ${p.kode}</span>
+            </div>
+          `;
+        });
+      }
+      resultsBox.classList.remove('hidden');
+      resultsBox.classList.add('flex');
+    });
+
+    // Menutup kotak hasil jika klik di luar
+    document.addEventListener('click', function(e) {
+      if (!searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
+        resultsBox.classList.add('hidden');
+      }
+    });
+
+    // Fungsi membersihkan pencarian
+    function resetSearch() {
+      searchInput.value = "";
+      resultsBox.classList.add('hidden');
+      btnClear.classList.add('hidden');
+      document.getElementById('jadwal-section').classList.add('hidden');
+      document.getElementById('empty-state').classList.remove('hidden');
+      currentUserKode = "";
+    }
+
+    // ================= FUNGSI EKSEKUSI SAAT NAMA DIKLIK =================
+    function eksekusiPilihPengawas(kode, nama) {
+      // 1. Kunci tampilan input & sembunyikan kotak
+      searchInput.value = nama;
+      resultsBox.classList.add('hidden');
+      currentUserKode = kode;
 
       toggleLoading(true, "Menyusun Jadwal...");
       
       setTimeout(() => {
-        const pTerpilih = database.pengawas.find(p => p.kode === currentUserKode);
-        document.getElementById('nama-terpilih').innerText = pTerpilih ? pTerpilih.nama : 'Pengawas';
-        document.getElementById('kode-terpilih').innerText = `KODE IDENTITAS: ${currentUserKode}`;
-        document.getElementById('inisial-nama').innerText = pTerpilih ? pTerpilih.nama.charAt(0).toUpperCase() : 'P';
+        document.getElementById('nama-terpilih').innerText = nama;
+        document.getElementById('kode-terpilih').innerText = `KODE IDENTITAS: ${kode}`;
+        document.getElementById('inisial-nama').innerText = nama.charAt(0).toUpperCase();
 
-        // Filter jadwal HANYA yang statusnya Published
+        // 2. Filter jadwal HANYA yang statusnya Published
         currentJadwalFiltered = database.jadwal.filter(j => {
           const kodes = j.kode_pengawas.split(',').map(k => k.trim());
-          const isUserIncluded = kodes.includes(currentUserKode);
+          const isUserIncluded = kodes.includes(kode);
           const isPublished = j.status && j.status.toLowerCase() === 'published';
           return isUserIncluded && isPublished;
         });
@@ -171,11 +223,11 @@
         } else {
           document.getElementById('jadwal-section').classList.remove('hidden');
           document.getElementById('empty-state').classList.add('hidden');
-          renderJadwalView("Semua"); // Default tampilkan semua hari
+          renderJadwalView("Semua"); // Render jadwal
         }
         toggleLoading(false);
       }, 300);
-    });
+    }
 
     function showEmptyJadwal() {
       const section = document.getElementById('jadwal-section');
@@ -191,21 +243,18 @@
       `;
     }
 
-    // ================= FUNGSI RENDER VIEW (HARI & KARTU KOMPAK) =================
+    // ================= FUNGSI RENDER VIEW (KARTU SUPER KOMPAK RINGKAS) =================
     function renderJadwalView(selectedHari) {
-      // 1. Bangun Tombol Pil Filter Hari secara Dinamis
+      // Pil Filter Hari
       const hariUnik = [...new Set(currentJadwalFiltered.map(j => j.hari_tanggal.replace(/\n/g, ' ')))];
       const filterContainer = document.getElementById('day-filters');
       
       let pillsHtml = `
         <button onclick="renderJadwalView('Semua')" class="whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 border ${selectedHari === 'Semua' ? 'bg-blue-600 text-white border-blue-700' : 'bg-white text-slate-600 border-slate-200 active:bg-slate-100'}">
-          Tampilkan Semua
+          Semua Hari
         </button>
       `;
-      
       hariUnik.forEach(hari => {
-        // Ambil nama hari singkat (misal: "Senin") untuk tombol jika teks aslinya terlalu panjang
-        const teksSingkat = hari.split(' ')[0].replace(',', ''); 
         const isSelected = selectedHari === hari;
         pillsHtml += `
           <button onclick="renderJadwalView('${hari}')" class="whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 border ${isSelected ? 'bg-slate-800 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 active:bg-slate-100'}">
@@ -215,18 +264,15 @@
       });
       filterContainer.innerHTML = pillsHtml;
 
-      // 2. Filter Jadwal yang Akan Dirender berdasarkan Pilihan Hari
       const dataToRender = selectedHari === 'Semua' 
         ? currentJadwalFiltered 
         : currentJadwalFiltered.filter(j => j.hari_tanggal.replace(/\n/g, ' ') === selectedHari);
 
       document.getElementById('info-total').innerText = `${dataToRender.length} Sesi Terjadwal`;
 
-      // 3. Render Kartu Jadwal dengan Pengelompokan Visual (Grouping)
       const container = document.getElementById('container-kartu');
       container.innerHTML = "";
 
-      // Kelompokkan data per hari agar lebih terstruktur saat "Tampilkan Semua" dipilih
       const groupedData = {};
       dataToRender.forEach(j => {
         const h = j.hari_tanggal.replace(/\n/g, ' ');
@@ -235,70 +281,73 @@
       });
 
       for (const [hariGroup, jadwals] of Object.entries(groupedData)) {
-        // Jika mode "Semua", tambahkan Header Judul Hari sebagai pemisah
         if(selectedHari === "Semua") {
           container.innerHTML += `
-            <div class="mt-6 mb-3 flex items-center gap-3">
-              <h3 class="font-black text-slate-800 text-xs uppercase tracking-wider">${hariGroup}</h3>
+            <div class="mt-5 mb-2.5 flex items-center gap-3">
+              <h3 class="font-black text-blue-800 text-[11px] uppercase tracking-wider bg-blue-100 px-3 py-1 rounded-full">${hariGroup}</h3>
               <div class="h-px bg-slate-200 flex-1"></div>
             </div>
           `;
         }
 
         jadwals.forEach((j, idx) => {
-          // Deteksi Partner
+          const detailId = `detail-${j.no}-${idx}`;
+          
+          // Pencarian Partner
           const semuaKode = j.kode_pengawas.split(',').map(k => k.trim());
           const partnerKodes = semuaKode.filter(k => k !== currentUserKode && k !== "");
-          const partnerId = `partner-${j.no}-${idx}`;
-
+          
           let partnerHtml = "";
           if(partnerKodes.length > 0) {
             partnerKodes.forEach(kp => {
               const pData = database.pengawas.find(x => x.kode === kp);
               const pNama = pData ? pData.nama : "Tanpa Nama";
               partnerHtml += `
-                <div class="flex items-center gap-2.5 py-1.5 border-b border-slate-100 last:border-0">
-                  <div class="w-5 h-5 rounded bg-slate-200 flex items-center justify-center text-[8px] font-black text-slate-600">P</div>
-                  <span class="text-xs font-bold text-slate-700">${pNama}</span>
+                <div class="flex items-center gap-2 py-1.5 border-b border-slate-200/50 last:border-0">
+                  <div class="w-5 h-5 rounded bg-blue-100 flex items-center justify-center text-[8px] font-black text-blue-700">P</div>
+                  <span class="text-[11px] font-bold text-slate-700">${pNama}</span>
                 </div>
               `;
             });
           } else {
-            partnerHtml = `<div class="text-[10px] text-slate-500 font-bold italic py-2">👤 Mengawas Mandiri (Tanpa Partner)</div>`;
+            partnerHtml = `<div class="text-[10px] text-slate-500 font-bold italic py-1">👤 Mandiri (Tanpa Partner)</div>`;
           }
 
-          // KARTU KOMPAK (MOBILE UI)
+          // FITUR BARU: KARTU KOMPAK DENGAN TOGGLE RINCIAN
           const card = document.createElement('div');
-          card.className = "bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300";
+          card.className = "bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300";
           
           card.innerHTML = `
-            <div class="border-l-[5px] border-emerald-500 p-3.5">
-              <div class="flex justify-between items-start mb-2">
-                <h4 class="font-black text-sm text-slate-900 leading-snug pr-2">${j.mata_kuliah}</h4>
-                <span class="bg-blue-50 border border-blue-200 text-blue-700 font-black text-[10px] px-2 py-1 rounded-lg whitespace-nowrap">
-                  🕒 ${j.jam}
-                </span>
+            <div onclick="toggleDetail('${detailId}', this)" class="p-3.5 flex items-center justify-between cursor-pointer active:bg-slate-50 transition-colors">
+              <div>
+                <div class="font-bold text-slate-900 text-[11px] mb-0.5 tracking-wide">${selectedHari === 'Semua' ? '' : hariGroup + ' • '}Sesi ${j.jam.split(' ')[0]}</div>
+                <div class="text-[13px] text-blue-700 font-black">🕒 Pukul ${j.jam.substring(j.jam.indexOf('(')+1, j.jam.indexOf(')'))}</div>
               </div>
               
-              <div class="flex flex-wrap items-center gap-2 mb-3 mt-1">
-                <div class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 shadow-2xs">
-                  <span class="text-sm">🚪</span>
-                  <span class="font-black text-[13px] tracking-wide">${j.ruang}</span>
+              <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-lg shadow-2xs">
+                <span>Rincian</span>
+                <span class="detail-toggle-icon transition-transform duration-200">▼</span>
+              </div>
+            </div>
+            
+            <div id="${detailId}" class="detail-body hidden border-t border-slate-100 bg-slate-50/70 p-3.5">
+              <h4 class="font-black text-sm text-slate-900 mb-2.5 leading-snug">${j.mata_kuliah}</h4>
+              
+              <div class="flex flex-wrap items-center gap-2 mb-3.5">
+                <div class="bg-emerald-100 border border-emerald-300 text-emerald-900 px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-2xs">
+                  <span class="text-xs">🚪</span>
+                  <span class="font-black text-xs">${j.ruang}</span>
                 </div>
-                <div class="text-slate-500 font-bold text-[10px] bg-slate-100 px-2 py-1.5 rounded-lg border border-slate-200">
+                <div class="text-slate-500 font-bold text-[10px] bg-white px-2 py-1 rounded-md border border-slate-200 shadow-2xs">
                   Kls: ${j.kelas} • ${j.program_studi}
                 </div>
               </div>
               
-              <button onclick="togglePartner('${partnerId}', this)" class="partner-toggle-btn w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-colors active:scale-98">
-                <span class="text-[10px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-2">
-                  👥 Partner Kerja (${partnerKodes.length})
-                </span>
-                <span class="arrow text-[10px] text-slate-400 font-black transition-transform duration-200">▼</span>
-              </button>
-              
-              <div id="${partnerId}" class="partner-list hidden mt-2 bg-slate-50 rounded-xl px-3 py-1 border border-slate-100">
-                ${partnerHtml}
+              <div class="pt-2 border-t border-slate-200/60">
+                <p class="text-[9px] text-slate-400 font-black uppercase tracking-wider mb-1.5">👥 Partner Ruangan:</p>
+                <div class="flex flex-col">
+                  ${partnerHtml}
+                </div>
               </div>
             </div>
           `;
@@ -307,12 +356,13 @@
       }
     }
 
-    // FUNGSI ANIMASI BUKA/TUTUP AKORDION PARTNER
-    function togglePartner(id, btnElement) {
-      const list = document.getElementById(id);
-      const arrow = btnElement.querySelector('.arrow');
-      list.classList.toggle('hidden');
-      arrow.classList.toggle('rotate-180');
+    // Fungsi Toggle Rincian Buka Tutup
+    function toggleDetail(id, headerEl) {
+      const bodyEl = document.getElementById(id);
+      const iconEl = headerEl.querySelector('.detail-toggle-icon');
+      
+      bodyEl.classList.toggle('hidden');
+      iconEl.classList.toggle('rotate-180');
     }
 
     fetchPortalData();
