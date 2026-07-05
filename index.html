@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Jadwal Pengawas Ujian</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    /* Keamanan Internal: Menonaktifkan text selection & klik kanan */
+    body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+    @media print { .no-print { display: none !important; } .print-area { width: 100%; } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen pb-12">
+
+  <!-- ================= FLOATING LOADING OVERLAY ================= -->
+  <div id="loading-overlay" class="fixed inset-0 bg-slate-950/20 backdrop-blur-xs flex items-center justify-center z-50 transition-all duration-300">
+    <div class="bg-white/90 backdrop-blur-md px-6 py-4 rounded-xl shadow-xl border border-slate-200/50 flex items-center gap-3">
+      <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span id="loading-text" class="text-xs font-bold tracking-wide text-slate-900 uppercase">Mengunduh Jadwal...</span>
+    </div>
+  </div>
+
+  <!-- Header Banner -->
+  <header class="bg-slate-900 text-white shadow-md no-print">
+    <div class="max-w-3xl mx-auto px-4 py-6 text-center">
+      <h1 id="semester-title" class="text-xl md:text-2xl font-black tracking-tight text-slate-50">Portal Jadwal Pengawas</h1>
+      <p class="text-[11px] md:text-xs text-slate-400 mt-1 font-medium tracking-wide uppercase">Sistem Informasi Pengawas Ujian Universitas</p>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-6">
+    <!-- Pilihan Pengawas Box -->
+    <div class="bg-white rounded-xl shadow-xs p-5 mb-6 no-print border border-slate-200 relative overflow-hidden">
+      <div class="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>
+      <label for="select-pengawas" class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">🔍 Cari Nama Anda:</label>
+      <select id="select-pengawas" disabled class="w-full bg-slate-50 border-2 border-slate-200 rounded-lg p-3.5 text-slate-900 font-bold text-sm focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all cursor-not-allowed opacity-70">
+        <option value="">-- Sedang memuat database... --</option>
+      </select>
+    </div>
+
+    <!-- Area Tampilan Jadwal -->
+    <div id="jadwal-section" class="hidden print-area">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-5 pb-3 border-b-2 border-slate-200/60">
+        <div>
+          <h2 id="nama-terpilih" class="text-lg sm:text-xl font-black text-slate-900 leading-tight">Nama Pengawas</h2>
+          <p id="kode-terpilih" class="text-[11px] font-bold text-blue-700 mt-0.5 bg-blue-50 inline-block px-2 py-0.5 rounded border border-blue-100">KID: -</p>
+        </div>
+        <button onclick="window.print()" class="no-print mt-3 sm:mt-0 w-full sm:w-auto px-4 py-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-xs font-bold rounded-lg shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider">
+          🖨️ Cetak PDF / Simpan
+        </button>
+      </div>
+
+      <!-- Total Info & Container Kartu -->
+      <p id="info-total" class="text-xs font-bold text-slate-500 mb-3"></p>
+      <div id="container-kartu" class="space-y-4">
+        <!-- Kartu Jadwal Di-generate via JavaScript -->
+      </div>
+    </div>
+
+    <!-- State Kosong / Default -->
+    <div id="empty-state" class="text-center py-16 text-slate-400 no-print flex flex-col items-center justify-center">
+      <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 shadow-inner border border-slate-200">
+        <span class="text-2xl">👋</span>
+      </div>
+      <h3 class="text-sm font-black text-slate-600 mb-1">Selamat Datang</h3>
+      <p class="text-[11px] font-medium max-w-xs">Silakan pilih nama Anda pada kolom di atas untuk melihat alokasi jadwal dan rekan ruangan.</p>
+    </div>
+  </main>
+
+  <script>
+    // MASUKKAN URL WEB APP GAS ANDA DI SINI
+    const API_URL = "https://script.google.com/macros/s/AKfycbwfb_SBIWtuC6s5CdaXPN-GEo7HmFEoTKmXF0HBX2IOkRCNPTlIFuVW50FvrSA14ihJlw/exec";
+
+    let database = { config: {}, pengawas: [], jadwal: [] };
+
+    document.addEventListener('contextmenu', e => e.preventDefault());
+
+    // Fungsi Pengatur Loading Overlay
+    function toggleLoading(show, text = "Memuat Data...") {
+      const overlay = document.getElementById('loading-overlay');
+      document.getElementById('loading-text').innerText = text;
+      if (show) {
+        overlay.classList.remove('hidden');
+      } else {
+        overlay.classList.add('hidden');
+      }
+    }
+
+    // Eksekusi Ambil Data Pertama Kali
+    async function fetchPortalData() {
+      // Aktifkan loading saat fungsi dimulai
+      toggleLoading(true, "Mengunduh Jadwal Terbaru...");
+      
+      try {
+        const res = await fetch(`${API_URL}?action=getData`);
+        const result = await res.json();
+        
+        if(result.status === "success") {
+          database = result;
+          renderDropdown();
+          
+          // Aktifkan dropdown setelah data siap
+          const selectEl = document.getElementById('select-pengawas');
+          selectEl.disabled = false;
+          selectEl.classList.remove('cursor-not-allowed', 'opacity-70');
+          selectEl.classList.add('cursor-pointer');
+
+          if(database.config.current_semester) {
+            document.getElementById('semester-title').innerText = `Jadwal Pengawas - ${database.config.current_semester}`;
+          }
+        }
+      } catch (err) {
+        alert("Gagal memuat data dari server. Pastikan koneksi internet stabil.");
+      } finally {
+        // Matikan loading ketika proses selesai (baik berhasil maupun gagal)
+        toggleLoading(false);
+      }
+    }
+
+    function renderDropdown() {
+      const select = document.getElementById('select-pengawas');
+      select.innerHTML = '<option value="">-- Ketik atau Pilih Nama Anda --</option>';
+      
+      database.pengawas.sort((a,b) => a.nama.localeCompare(b.nama));
+      
+      database.pengawas.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.kode;
+        opt.textContent = `${p.nama} (KID: ${p.kode})`;
+        select.appendChild(opt);
+      });
+    }
+
+    document.getElementById('select-pengawas').addEventListener('change', function(e) {
+      const kode = e.target.value;
+      if(!kode) {
+        document.getElementById('jadwal-section').classList.add('hidden');
+        document.getElementById('empty-state').classList.remove('hidden');
+        return;
+      }
+
+      // Animasi loading singkat agar terasa responsif saat memfilter
+      toggleLoading(true, "Menyiapkan Jadwal...");
+      
+      setTimeout(() => {
+        const pTerpilih = database.pengawas.find(p => p.kode === kode);
+        document.getElementById('nama-terpilih').innerText = pTerpilih ? pTerpilih.nama : 'Pengawas';
+        document.getElementById('kode-terpilih').innerText = `KODE IDENTITAS: ${kode}`;
+
+        // FILTER JADWAL: Hanya ambil yang mengandung kode pengawas DAN berstatus 'Published'
+        const jadwalFiltered = database.jadwal.filter(j => {
+          const kodes = j.kode_pengawas.split(',').map(k => k.trim());
+          const isUserIncluded = kodes.includes(kode);
+          const isPublished = j.status && j.status.toLowerCase() === 'published';
+          return isUserIncluded && isPublished;
+        });
+
+        renderKartuJadwal(jadwalFiltered, kode);
+        toggleLoading(false);
+      }, 300); // delay buatan 300ms untuk efek halus
+    });
+
+    function renderKartuJadwal(jadwalArray, userKode) {
+      const container = document.getElementById('container-kartu');
+      const section = document.getElementById('jadwal-section');
+      const empty = document.getElementById('empty-state');
+      const infoTotal = document.getElementById('info-total');
+      
+      container.innerHTML = '';
+      section.classList.remove('hidden');
+      empty.classList.add('hidden');
+
+      if(jadwalArray.length === 0) {
+        infoTotal.innerText = "";
+        container.innerHTML = `
+          <div class="bg-amber-50 text-amber-800 p-6 rounded-xl text-center border border-amber-200 shadow-sm flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
+            <span class="text-3xl mb-2">☕</span>
+            <h4 class="font-black text-sm mb-1">Belum Ada Jadwal Aktif</h4>
+            <p class="text-[11px] font-medium max-w-xs">Anda tidak memiliki jadwal mengawas yang dipublikasikan saat ini. Silakan cek kembali nanti atau hubungi Panitia.</p>
+          </div>
+        `;
+        return;
+      }
+
+      infoTotal.innerText = `Memiliki ${jadwalArray.length} Sesi Terjadwal:`;
+
+      jadwalArray.forEach(j => {
+        // DETEKSI PARTNER
+        const semuaKodeDiSesi = j.kode_pengawas.split(',').map(k => k.trim());
+        const kodePartner = semuaKodeDiSesi.filter(k => k !== userKode && k !== "");
+        
+        let partnerHtml = "";
+        if(kodePartner.length > 0) {
+          kodePartner.forEach(kp => {
+            const dataP = database.pengawas.find(p => p.kode === kp);
+            const namaPartner = dataP ? dataP.nama : "Belum Terdaftar";
+            partnerHtml += `
+              <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+                <div class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[9px] font-black text-slate-600">P</div>
+                <span class="font-bold text-xs text-slate-800">${namaPartner}</span>
+              </div>
+            `;
+          });
+        } else {
+          partnerHtml = `
+            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+              <span class="text-xs font-bold text-slate-500 italic">👤 Mengawas Mandiri (Sendirian)</span>
+            </div>
+          `;
+        }
+
+        const card = document.createElement('div');
+        card.className = "bg-white border-l-4 border-blue-600 rounded-r-xl rounded-l-sm shadow-sm p-4 sm:p-5 border-y border-r border-y-slate-200 border-r-slate-200 hover:shadow-md transition-shadow relative overflow-hidden animate-in slide-in-from-bottom-2 duration-300";
+        
+        card.innerHTML = `
+          <!-- Header Card: Hari & Jam -->
+          <div class="flex justify-between items-start mb-3">
+            <span class="inline-block bg-slate-100 text-slate-700 font-bold text-[10px] px-2.5 py-1 rounded border border-slate-200 uppercase tracking-wide">
+              📅 ${j.hari_tanggal.replace(/\n/g, ' ')}
+            </span>
+            <span class="inline-block bg-blue-50 text-blue-700 font-black text-[11px] px-2.5 py-1 rounded border border-blue-100 shadow-2xs">
+              🕒 ${j.jam}
+            </span>
+          </div>
+          
+          <!-- Middle Card: Matkul & Ruang -->
+          <h3 class="font-black text-base text-slate-900 mb-2 leading-tight">${j.mata_kuliah}</h3>
+          <div class="flex flex-wrap items-center gap-2 mb-4">
+            <div class="bg-emerald-100 border border-emerald-300 text-emerald-900 px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-2xs">
+              <span class="text-sm">🚪</span>
+              <span class="font-black text-sm">${j.ruang}</span>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-bold text-[11px]">
+              Kelas ${j.kelas} • ${j.program_studi}
+            </div>
+          </div>
+          
+          <!-- Bottom Card: Koordinasi Partner -->
+          <div class="border-t border-slate-100 pt-3">
+            <p class="text-[9px] text-slate-400 font-black uppercase tracking-wider mb-2">👥 Partner Koordinasi Ruangan:</p>
+            <div class="flex flex-col gap-1.5">
+              ${partnerHtml}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Jalankan pertama kali saat halaman dibuka
+    fetchPortalData();
+  </script>
+</body>
+</html>
