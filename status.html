@@ -99,6 +99,19 @@
   .clock .date{ display:block; font-weight:800; color:var(--text-dim); text-transform:uppercase; letter-spacing:.14em; font-size: var(--fs-sm); }
   .clock .time{ font-weight:900; letter-spacing:-.02em; color:#fff; font-variant-numeric: tabular-nums; font-size: var(--fs-xl); text-shadow: 0 4px 18px rgba(0,0,0,.5); }
 
+  /* ================= SESSION BAR ================= */
+  .session-bar{
+    display:flex; align-items:center; flex-wrap:wrap; gap: var(--gap);
+    padding: 0 clamp(16px,2.6vw,44px) clamp(8px,1.2vh,14px);
+  }
+  .sesi-indicator{
+    font-size: var(--fs-sm); font-weight:800; color:#fde68a; text-transform:uppercase; letter-spacing:.08em;
+    background: rgba(250,204,21,.08); border:1px solid rgba(250,204,21,.35);
+    padding: clamp(4px,.7vh,8px) clamp(10px,1.2vw,16px); border-radius: clamp(8px,1vmin,14px);
+  }
+  .sesi-indicator b{ color:#fff; }
+  .sesi-indicator.is-manual{ color:#a5f3fc; background: rgba(34,211,238,.08); border-color: rgba(34,211,238,.35); }
+
   /* ================= MAIN ================= */
   main{
     flex:1 1 auto; min-height:0; position:relative;
@@ -122,7 +135,7 @@
   #board-container{
     flex:1 1 auto; min-height:0;
     display:grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     grid-auto-rows: 1fr;
     gap: var(--gap);
   }
@@ -304,7 +317,7 @@
 
       <div class="filter-box">
         <span>📅 Filter Hari</span>
-        <select id="filter-hari" onchange="applyDayFilter()">
+        <select id="filter-hari" onchange="applyFilters()">
           <option value="">-- Menunggu Database --</option>
         </select>
       </div>
@@ -313,6 +326,16 @@
         <span id="live-date" class="date">Memuat...</span>
         <span id="live-time" class="time">00:00:00</span>
       </div>
+    </div>
+
+    <div class="session-bar">
+      <div class="filter-box">
+        <span>🕒 Filter Sesi</span>
+        <select id="filter-sesi" onchange="applyFilters()">
+          <option value="auto">🔄 Otomatis (Sesi Aktif)</option>
+        </select>
+      </div>
+      <div id="sesi-indicator" class="sesi-indicator">Memuat sesi...</div>
     </div>
   </header>
 
@@ -327,7 +350,7 @@
 
     <div id="empty-state" style="display:none;">
       <div class="icon">📅</div>
-      <h2>Tidak Ada Jadwal Pengawasan Hari Ini</h2>
+      <h2>Tidak Ada Jadwal Pada Sesi &amp; Hari Ini</h2>
     </div>
 
     <div id="board-container"></div>
@@ -356,8 +379,10 @@
 
     let database = { config: {}, pengawas: [], jadwal: [] };
     let liveJadwal = [];
+    let dayJadwal = [];       // jadwal terfilter hari (sebelum difilter sesi)
+    let lastAutoKey = null;   // kunci sesi aktif terakhir saat mode Otomatis
 
-    const ITEMS_PER_PAGE = 5;
+    const ITEMS_PER_PAGE = 6;
     const SLIDE_DURATION = 10000;
 
     let currentPage = 1;
@@ -387,12 +412,21 @@
           const publishedJadwal = database.jadwal.filter(j => j.status && j.status.toLowerCase() === 'published');
 
           buildHariDropdown(publishedJadwal);
-          applyDayFilter(publishedJadwal);
+          applyFilters(publishedJadwal);
         }
       } catch (err) {
         console.error("Gagal sinkronisasi data.");
       }
     }
+
+    // Cek tiap 20 detik: kalau mode Sesi masih "Otomatis" dan sesi aktif sudah berganti, render ulang
+    setInterval(() => {
+      const sesiSelect = document.getElementById('filter-sesi');
+      if (!sesiSelect || sesiSelect.value !== 'auto') return;
+      const sesiList = getUniqueSesiList(dayJadwal);
+      const activeKey = determineActiveKey(sesiList);
+      if (activeKey !== lastAutoKey) applyFilters();
+    }, 20000);
 
     function buildHariDropdown(publishedJadwal) {
       const selectHari = document.getElementById('filter-hari');
@@ -416,15 +450,103 @@
       }
     }
 
-    function applyDayFilter(publishedJadwalParam = null) {
+    // Ambil info sesi (label, rentang jam, menit mulai/selesai) dari string jam mentah,
+    // misal "1 (07:00 - 08:30)" -> { key, sesiLabel:"1", rangeText:"07:00 - 08:30", startMin, endMin }
+    function parseJamMeta(rawJam) {
+      const clean = (rawJam || '').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+      const sesiLabelMatch = clean.match(/^([^(]+)/);
+      const sesiLabel = sesiLabelMatch ? sesiLabelMatch[1].trim() : clean;
+      const rangeMatch = clean.match(/\(([^)]+)\)/);
+      const rangeText = rangeMatch ? rangeMatch[1].trim() : clean;
+      const timeMatch = clean.match(/(\d{1,2})[:.](\d{2})\s*-\s*(\d{1,2})[:.](\d{2})/);
+      let startMin = null, endMin = null;
+      if (timeMatch) {
+        startMin = parseInt(timeMatch[1], 10) * 60 + parseInt(timeMatch[2], 10);
+        endMin = parseInt(timeMatch[3], 10) * 60 + parseInt(timeMatch[4], 10);
+      }
+      return { key: clean, sesiLabel, rangeText, startMin, endMin };
+    }
+
+    // Daftar sesi unik pada data hari terpilih, terurut berdasarkan jam mulai
+    function getUniqueSesiList(jadwalHari) {
+      const map = new Map();
+      jadwalHari.forEach(j => {
+        const meta = parseJamMeta(j.jam);
+        if (!map.has(meta.key)) map.set(meta.key, meta);
+      });
+      return [...map.values()].sort((a, b) => (a.startMin ?? 0) - (b.startMin ?? 0));
+    }
+
+    // Tentukan sesi yang sedang aktif berdasarkan jam saat ini.
+    // Kalau tidak ada sesi yang persis sedang berlangsung (jeda antar sesi), pilih sesi terdekat.
+    function determineActiveKey(sesiList) {
+      if (sesiList.length === 0) return null;
+      const now = new Date();
+      const nowMin = now.getHours() * 60 + now.getMinutes();
+
+      const exact = sesiList.find(s => s.startMin !== null && s.endMin !== null && nowMin >= s.startMin && nowMin < s.endMin);
+      if (exact) return exact.key;
+
+      let best = null, bestDist = Infinity;
+      sesiList.forEach(s => {
+        if (s.startMin === null) return;
+        let dist;
+        if (nowMin < s.startMin) dist = s.startMin - nowMin;
+        else dist = nowMin - s.endMin;
+        if (dist < bestDist) { bestDist = dist; best = s; }
+      });
+      return best ? best.key : sesiList[0].key;
+    }
+
+    // Bangun ulang dropdown sesi berdasarkan data hari terpilih, sambil menjaga pilihan pengguna jika masih valid
+    function buildSesiDropdown(jadwalHari) {
+      const select = document.getElementById('filter-sesi');
+      const currentVal = select.value || 'auto';
+      const sesiList = getUniqueSesiList(jadwalHari);
+
+      select.innerHTML = '<option value="auto">🔄 Otomatis (Sesi Aktif)</option>';
+      sesiList.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.key;
+        opt.textContent = `Sesi ${s.sesiLabel} (${s.rangeText})`;
+        select.appendChild(opt);
+      });
+
+      const availableValues = Array.from(select.options).map(o => o.value);
+      select.value = availableValues.includes(currentVal) ? currentVal : 'auto';
+    }
+
+    function updateSesiIndicator(sesiList, activeKey, mode) {
+      const badge = document.getElementById('sesi-indicator');
+      const active = sesiList.find(s => s.key === activeKey);
+      badge.classList.toggle('is-manual', mode !== 'auto');
+
+      if (!active) {
+        badge.innerHTML = 'Tidak ada sesi terjadwal';
+        return;
+      }
+      const label = mode === 'auto' ? 'Sesi Aktif Sekarang' : 'Sesi Dipilih Manual';
+      badge.innerHTML = `${escapeHtml(label)}: <b>Sesi ${escapeHtml(active.sesiLabel)} (${escapeHtml(active.rangeText)})</b>`;
+    }
+
+    function applyFilters(publishedJadwalParam = null) {
       const sourceData = publishedJadwalParam || database.jadwal.filter(j => j.status && j.status.toLowerCase() === 'published');
       const selectedHari = document.getElementById('filter-hari').value;
 
-      liveJadwal = sourceData.filter(j => j.hari_tanggal.replace(/\n/g, ' ').trim() === selectedHari);
+      dayJadwal = sourceData.filter(j => j.hari_tanggal.replace(/\n/g, ' ').trim() === selectedHari);
+
+      buildSesiDropdown(dayJadwal);
+
+      const sesiMode = document.getElementById('filter-sesi').value || 'auto';
+      const sesiList = getUniqueSesiList(dayJadwal);
+      const activeKey = sesiMode === 'auto' ? determineActiveKey(sesiList) : sesiMode;
+      if (sesiMode === 'auto') lastAutoKey = activeKey;
+
+      updateSesiIndicator(sesiList, activeKey, sesiMode);
+
+      liveJadwal = dayJadwal.filter(j => parseJamMeta(j.jam).key === activeKey);
 
       liveJadwal.sort((a, b) => {
-        if (a.jam < b.jam) return -1;
-        if (a.jam > b.jam) return 1;
         if (a.ruang < b.ruang) return -1;
         if (a.ruang > b.ruang) return 1;
         return 0;
