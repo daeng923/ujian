@@ -458,7 +458,8 @@
       const sesiLabel = sesiLabelMatch ? sesiLabelMatch[1].trim() : clean;
       const rangeMatch = clean.match(/\(([^)]+)\)/);
       const rangeText = rangeMatch ? rangeMatch[1].trim() : clean;
-      const timeMatch = clean.match(/(\d{1,2})[:.](\d{2})\s*-\s*(\d{1,2})[:.](\d{2})/);
+      // Mendukung berbagai gaya penulisan jam: "07:00 - 08:30", "07.30 s/d 08.40 WIB", "07.30-08.40", dst.
+      const timeMatch = clean.match(/(\d{1,2})[.:](\d{2})\s*(?:-|s\/d|s\.d\.?|sd|sampai)\s*(\d{1,2})[.:](\d{2})/i);
       let startMin = null, endMin = null;
       if (timeMatch) {
         startMin = parseInt(timeMatch[1], 10) * 60 + parseInt(timeMatch[2], 10);
