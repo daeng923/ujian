@@ -126,11 +126,10 @@
     grid-auto-rows: 1fr;
     gap: var(--gap);
   }
-  /* Layar sempit (laptop kecil, tablet) -> kurangi jumlah kolom biar kartu tidak dempet */
-  @media (max-width: 1300px){
-    #board-container{ grid-template-columns: repeat(3, 1fr); }
-  }
-  @media (max-width: 760px){
+  /* Hanya turunkan kolom untuk layar benar-benar kecil (HP), bukan untuk lebar TV -
+     browser Smart TV (termasuk Sharp) sering melaporkan viewport CSS lebih kecil
+     dari resolusi fisiknya, jadi breakpoint di rentang "laptop" justru salah trigger di TV */
+  @media (max-width: 480px){
     #board-container{ grid-template-columns: repeat(2, 1fr); }
   }
 
