@@ -238,6 +238,12 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbwfb_SBIWtuC6s5CdaXPN-GEo7HmFEoTKmXF0HBX2IOkRCNPTlIFuVW50FvrSA14ihJlw/exec";
     let database = { config: {}, pengawas: [], jadwal: [] };
 
+    // Registry baris yang sedang dirender di tabel "Alokasi Jadwal Aktif".
+    // Kunci (uid) selalu unik per-render (row0, row1, dst) sehingga tidak akan
+    // pernah bentrok walau kolom "NO" dari Excel punya nilai yang sama di hari
+    // yang berbeda (mis. NO mulai dari 1 lagi tiap ganti hari).
+    let rowRegistry = {};
+
     function toggleLoading(show, text = "Sinkronisasi Data...") {
       const overlay = document.getElementById('loading-overlay');
       document.getElementById('loading-text').innerText = text;
@@ -454,14 +460,28 @@
     });
 
     // ================= ⚙️ FITUR UTAMA: CHECKBOX DROPDOWN MULTI SELECT PADA KOLOM TABEL =================
+    // CATATAN PERBAIKAN BUG:
+    // Sebelumnya id/data-attribute per baris memakai j.no (kolom "NO" dari Excel) secara langsung.
+    // Karena tabel ini bisa menampilkan SEMUA HARI sekaligus, dan "NO" seringkali diisi ulang
+    // dari 1 di setiap hari (bukan unik secara global), dua baris dari hari berbeda bisa berbagi
+    // id yang sama. Akibatnya saat Save, querySelectorAll/getElementById bisa "menyedot" checkbox
+    // milik baris lain yang no-nya kebetulan sama -> kode pengawas yang tersimpan jadi kacau.
+    // Perbaikan: setiap baris yang dirender diberi uid unik (row0, row1, ...) yang dijamin tidak
+    // pernah bentrok, terlepas dari nilai "NO" aslinya. Nilai "NO" asli tetap dikirim ke backend
+    // seperti biasa lewat rowRegistry, jadi kontrak API/GAS tidak berubah sama sekali.
     function renderTabelJadwal(jadwalArray) {
       const tbody = document.getElementById('table-jadwal-body');
       tbody.innerHTML = "";
+      rowRegistry = {};
+
       if(jadwalArray.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 font-medium bg-slate-50/30">Tidak ditemukan jadwal yang cocok dengan filter aktif.</td></tr>`;
         return;
       }
-      jadwalArray.forEach(j => {
+      jadwalArray.forEach((j, idx) => {
+        const uid = `row${idx}`;
+        rowRegistry[uid] = j;
+
         const currentStatus = j.status || "Draft";
         const isPublished = currentStatus.toLowerCase() === "published";
         const kodeTerpilih = j.kode_pengawas ? j.kode_pengawas.split(',').map(k => k.trim()) : [];
@@ -494,17 +514,17 @@
           
           <td class="p-3">
             <div class="relative w-full">
-              <button onclick="toggleDropdownCheckbox('${j.no}')" id="btn-dropdown-${j.no}" class="w-full text-left bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-black text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer flex justify-between items-center transition-all">
+              <button onclick="toggleDropdownCheckbox('${uid}')" id="btn-dropdown-${uid}" class="w-full text-left bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-black text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer flex justify-between items-center transition-all">
                 <span class="truncate">⚙️ Atur Pengawas (${kodeTerpilih.filter(k=>k!=="").length})</span>
                 <span class="text-[9px] text-slate-400">▼</span>
               </button>
               
-              <div id="box-checkbox-${j.no}" class="hidden absolute left-0 right-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-xl p-3 z-30 max-h-48 overflow-y-auto space-y-2">
+              <div id="box-checkbox-${uid}" class="hidden absolute left-0 right-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-xl p-3 z-30 max-h-48 overflow-y-auto space-y-2">
                 ${database.pengawas.map(p => {
                   const checked = kodeTerpilih.includes(p.kode) ? 'checked' : '';
                   return `
                     <label class="flex items-center gap-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 p-1 rounded cursor-pointer select-none">
-                      <input type="checkbox" data-no="${j.no}" value="${p.kode}" ${checked} onchange="updateLivePreviewKode('${j.no}')" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5">
+                      <input type="checkbox" data-uid="${uid}" value="${p.kode}" ${checked} onchange="updateLivePreviewKode('${uid}')" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5">
                       <span class="font-mono bg-slate-100 text-slate-600 px-1 rounded text-[10px]">KID ${p.kode}</span>
                       <span class="truncate">${p.nama}</span>
                     </label>
@@ -512,20 +532,20 @@
                 }).join('')}
               </div>
             </div>
-            <div id="preview-nama-${j.no}" class="mt-1.5 flex flex-wrap gap-1">
+            <div id="preview-nama-${uid}" class="mt-1.5 flex flex-wrap gap-1">
               ${namaPengawasHtml}
             </div>
           </td>
           
           <td class="p-3 text-center">
-            <select id="select-status-${j.no}" 
+            <select id="select-status-${uid}" 
               class="w-full border border-slate-300 rounded-lg p-1.5 font-black text-[11px] focus:outline-hidden text-center transition-all cursor-pointer ${isPublished ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : 'bg-amber-100 text-amber-900 border-amber-300'}">
               <option value="Draft" ${!isPublished ? 'selected' : ''}>❌ Hide (Draft)</option>
               <option value="Published" ${isPublished ? 'selected' : ''}>👁️ Live (Publish)</option>
             </select>
           </td>
           <td class="p-3 text-center">
-            <button onclick="saveJadwalPengawasOtomatis('${j.no}')" 
+            <button onclick="saveJadwalPengawasOtomatis('${uid}')" 
               class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black py-2 rounded-lg cursor-pointer transition-all uppercase tracking-wide shadow-2xs">
               Save
             </button>
@@ -535,19 +555,19 @@
       });
     }
 
-    function toggleDropdownCheckbox(noBaris) {
+    function toggleDropdownCheckbox(uid) {
       document.querySelectorAll('[id^="box-checkbox-"]').forEach(box => {
-        if(box.id !== `box-checkbox-${noBaris}`) box.classList.add('hidden');
+        if(box.id !== `box-checkbox-${uid}`) box.classList.add('hidden');
       });
-      document.getElementById(`box-checkbox-${noBaris}`).classList.toggle('hidden');
+      document.getElementById(`box-checkbox-${uid}`).classList.toggle('hidden');
     }
 
-    function updateLivePreviewKode(noBaris) {
-      const checkboxes = document.querySelectorAll(`input[data-no="${noBaris}"]:checked`);
+    function updateLivePreviewKode(uid) {
+      const checkboxes = document.querySelectorAll(`input[data-uid="${uid}"]:checked`);
       const kodes = Array.from(checkboxes).map(cb => cb.value);
       
-      document.getElementById(`btn-dropdown-${noBaris}`).querySelector('span:first-child').innerText = `⚙️ Atur Pengawas (${kodes.length})`;
-      const previewContainer = document.getElementById(`preview-nama-${noBaris}`);
+      document.getElementById(`btn-dropdown-${uid}`).querySelector('span:first-child').innerText = `⚙️ Atur Pengawas (${kodes.length})`;
+      const previewContainer = document.getElementById(`preview-nama-${uid}`);
       previewContainer.innerHTML = "";
       
       if(kodes.length > 0) {
@@ -560,20 +580,26 @@
       }
     }
 
-    async function saveJadwalPengawasOtomatis(noJadwal) {
-      const checkboxes = document.querySelectorAll(`input[data-no="${noJadwal}"]:checked`);
+    async function saveJadwalPengawasOtomatis(uid) {
+      const j = rowRegistry[uid];
+      if (!j) {
+        triggerAlert("Baris tidak ditemukan (data mungkin sudah berubah), silakan refresh.", "error");
+        return;
+      }
+
+      const checkboxes = document.querySelectorAll(`input[data-uid="${uid}"]:checked`);
       const kodesGabungan = Array.from(checkboxes).map(cb => cb.value).join(', ');
-      const statusVal = document.getElementById(`select-status-${noJadwal}`).value;
+      const statusVal = document.getElementById(`select-status-${uid}`).value;
       
-      document.getElementById(`box-checkbox-${noJadwal}`).classList.add('hidden');
-      toggleLoading(true, `Menyimpan Baris #${noJadwal}...`);
+      document.getElementById(`box-checkbox-${uid}`).classList.add('hidden');
+      toggleLoading(true, `Menyimpan Baris #${j.no}...`);
       
       try {
         await fetch(API_URL, {
           method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: "updateJadwalPengawas", no: noJadwal, kode_pengawas: kodesGabungan, status: statusVal })
+          body: JSON.stringify({ action: "updateJadwalPengawas", no: j.no, kode_pengawas: kodesGabungan, status: statusVal })
         });
-        triggerAlert(`🎉 Alokasi Baris #${noJadwal} berhasil diperbarui!`, "success");
+        triggerAlert(`🎉 Alokasi Baris #${j.no} berhasil diperbarui!`, "success");
         refreshData();
       } catch (err) { 
         triggerAlert("Gagal merubah alokasi data.", "error"); 
