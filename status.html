@@ -95,6 +95,33 @@
     font-size: var(--fs-md); outline:none; cursor:pointer; max-width: 34vw;
   }
 
+  /* Audio Button Styles */
+  .audio-btn {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    padding: clamp(6px, 1vh, 12px) clamp(12px, 1.5vw, 20px);
+    border-radius: clamp(8px, 1vmin, 14px);
+    font-size: var(--fs-sm);
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .audio-btn:hover {
+    background: var(--panel-2);
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+  }
+  .audio-btn.playing {
+    color: var(--accent-2);
+    border-color: var(--accent-2);
+  }
+
   .clock{ text-align:right; flex-shrink:0; }
   .clock .date{ display:block; font-weight:800; color:var(--text-dim); text-transform:uppercase; letter-spacing:.14em; font-size: var(--fs-sm); }
   .clock .time{ font-weight:900; letter-spacing:-.02em; color:#fff; font-variant-numeric: tabular-nums; font-size: var(--fs-xl); text-shadow: 0 4px 18px rgba(0,0,0,.5); }
@@ -139,9 +166,6 @@
     grid-auto-rows: 1fr;
     gap: var(--gap);
   }
-  /* Hanya turunkan kolom untuk layar benar-benar kecil (HP), bukan untuk lebar TV -
-     browser Smart TV (termasuk Sharp) sering melaporkan viewport CSS lebih kecil
-     dari resolusi fisiknya, jadi breakpoint di rentang "laptop" justru salah trigger di TV */
   @media (max-width: 480px){
     #board-container{ grid-template-columns: repeat(2, 1fr); }
   }
@@ -305,6 +329,11 @@
 </head>
 <body>
 
+  <!-- Elemen Audio Tersembunyi (Ganti src dengan URL audio instrumen internal/hosting Anda jika ada) -->
+  <audio id="bgm" loop>
+    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+  </audio>
+
   <header>
     <div class="header-inner">
       <div class="brand">
@@ -314,6 +343,11 @@
           <p class="live-pill"><span class="live-dot"></span>Siaran Informasi Langsung (Live)</p>
         </div>
       </div>
+
+      <!-- Tombol Kontrol Musik Latar -->
+      <button id="btn-audio" class="audio-btn" onclick="toggleAudio()">
+        <span>🔈 Musik: OFF</span>
+      </button>
 
       <div class="filter-box">
         <span>📅 Filter Hari</span>
@@ -379,8 +413,8 @@
 
     let database = { config: {}, pengawas: [], jadwal: [] };
     let liveJadwal = [];
-    let dayJadwal = [];       // jadwal terfilter hari (sebelum difilter sesi)
-    let lastAutoKey = null;   // kunci sesi aktif terakhir saat mode Otomatis
+    let dayJadwal = [];       
+    let lastAutoKey = null;   
 
     const ITEMS_PER_PAGE = 6;
     const SLIDE_DURATION = 10000;
@@ -388,6 +422,28 @@
     let currentPage = 1;
     let totalPages = 1;
     let slideInterval = null;
+
+    // Fungsi Kontrol Audio Tambahan
+    function toggleAudio() {
+      const audio = document.getElementById('bgm');
+      const btn = document.getElementById('btn-audio');
+      
+      // Mengatur volume sedang (35%) agar tidak terlalu bising di TV instansi
+      audio.volume = 0.35; 
+
+      if (audio.paused) {
+        audio.play().then(() => {
+          btn.innerHTML = '<span>📻 Musik: ON</span>';
+          btn.classList.add('playing');
+        }).catch(err => {
+          console.error("Autoplay diblokir oleh browser. Butuh interaksi user.", err);
+        });
+      } else {
+        audio.pause();
+        btn.innerHTML = '<span>🔈 Musik: OFF</span>';
+        btn.classList.remove('playing');
+      }
+    }
 
     function updateClock() {
       const now = new Date();
@@ -419,7 +475,6 @@
       }
     }
 
-    // Cek tiap 20 detik: kalau mode Sesi masih "Otomatis" dan sesi aktif sudah berganti, render ulang
     setInterval(() => {
       const sesiSelect = document.getElementById('filter-sesi');
       if (!sesiSelect || sesiSelect.value !== 'auto') return;
@@ -450,15 +505,12 @@
       }
     }
 
-    // Ambil info sesi (label, rentang jam, menit mulai/selesai) dari string jam mentah,
-    // misal "1 (07:00 - 08:30)" -> { key, sesiLabel:"1", rangeText:"07:00 - 08:30", startMin, endMin }
     function parseJamMeta(rawJam) {
       const clean = (rawJam || '').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
       const sesiLabelMatch = clean.match(/^([^(]+)/);
       const sesiLabel = sesiLabelMatch ? sesiLabelMatch[1].trim() : clean;
       const rangeMatch = clean.match(/\(([^)]+)\)/);
       const rangeText = rangeMatch ? rangeMatch[1].trim() : clean;
-      // Mendukung berbagai gaya penulisan jam: "07:00 - 08:30", "07.30 s/d 08.40 WIB", "07.30-08.40", dst.
       const timeMatch = clean.match(/(\d{1,2})[.:](\d{2})\s*(?:-|s\/d|s\.d\.?|sd|sampai)\s*(\d{1,2})[.:](\d{2})/i);
       let startMin = null, endMin = null;
       if (timeMatch) {
@@ -468,7 +520,6 @@
       return { key: clean, sesiLabel, rangeText, startMin, endMin };
     }
 
-    // Daftar sesi unik pada data hari terpilih, terurut berdasarkan jam mulai
     function getUniqueSesiList(jadwalHari) {
       const map = new Map();
       jadwalHari.forEach(j => {
@@ -478,8 +529,6 @@
       return [...map.values()].sort((a, b) => (a.startMin ?? 0) - (b.startMin ?? 0));
     }
 
-    // Tentukan sesi yang sedang aktif berdasarkan jam saat ini.
-    // Kalau tidak ada sesi yang persis sedang berlangsung (jeda antar sesi), pilih sesi terdekat.
     function determineActiveKey(sesiList) {
       if (sesiList.length === 0) return null;
       const now = new Date();
@@ -499,7 +548,6 @@
       return best ? best.key : sesiList[0].key;
     }
 
-    // Bangun ulang dropdown sesi berdasarkan data hari terpilih, sambil menjaga pilihan pengguna jika masih valid
     function buildSesiDropdown(jadwalHari) {
       const select = document.getElementById('filter-sesi');
       const currentVal = select.value || 'auto';
@@ -702,7 +750,6 @@
       document.getElementById('btn-next').classList.toggle('is-enabled', enabled);
     }
 
-    // Tombol prev/next: transparan, auto-hide setelah beberapa detik tanpa aktivitas mouse/sentuhan
     const mainEl = document.querySelector('main');
     let navHideTimer = null;
     function revealNavButtons() {
