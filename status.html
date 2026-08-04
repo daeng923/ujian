@@ -45,9 +45,14 @@
   <!-- HEADER TV WITH LOGO -->
   <header class="flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shadow-2xl backdrop-blur-md flex-shrink-0">
     <div class="flex items-center gap-3.5">
-      <!-- Logo Gambar Utama -->
-      <div class="w-12 h-12 bg-slate-950/80 rounded-xl flex items-center justify-center border border-slate-800/80 shadow-md p-1.5 flex-shrink-0">
-        <img src="http://daeng923.github.io/ujian/logomkwk-removebg-preview.png" alt="Logo MKWK" class="w-full h-full object-contain">
+      <!-- Logo Gambar Utama dengan Fallback -->
+      <div id="logo-container" class="w-12 h-12 bg-slate-950/80 rounded-xl flex items-center justify-center border border-slate-800/80 shadow-md p-1.5 flex-shrink-0">
+        <img 
+          src="https://daeng923.github.io/ujian/logomkwk-removebg-preview.png" 
+          alt="Logo MKWK" 
+          class="w-full h-full object-contain"
+          onerror="this.onerror=null; this.parentElement.innerHTML='🏛️';"
+        >
       </div>
       <div>
         <h1 class="text-lg font-black tracking-wide text-white uppercase leading-none">REKAPAN LAYANAN AIK & MKWK</h1>
@@ -153,7 +158,12 @@
   <footer class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0">
     <div class="p-2.5 flex items-center justify-between text-xs px-5">
       <div class="flex items-center gap-2.5 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-        <img src="http://daeng923.github.io/ujian/logomkwk-removebg-preview.png" alt="Mini Logo" class="h-4 w-auto object-contain">
+        <img 
+          src="https://daeng923.github.io/ujian/logomkwk-removebg-preview.png" 
+          alt="Mini Logo" 
+          class="h-4 w-auto object-contain"
+          onerror="this.style.display='none';"
+        >
         <span class="text-blue-400">MKWK.ORG</span>
         <span>•</span>
         <span>Layanan Akademik Al-Islam, Kemuhammadiyahan & MKWK</span>
@@ -188,6 +198,7 @@
 
     // Pencarian Field Fleksibel
     function getValueByKeyPattern(obj, patterns) {
+      if (!obj) return null;
       const keys = Object.keys(obj);
       for (let pattern of patterns) {
         const matchedKey = keys.find(k => {
@@ -217,8 +228,10 @@
         const res = await fetch(GAS_URL);
         const data = await res.json();
 
-        if (data.success && data.rows) {
-          processData(data.rows, data.count);
+        if (data && (data.success || data.rows)) {
+          const rows = data.rows || [];
+          const count = data.count || rows.length;
+          processData(rows, count);
         }
       } catch (err) {
         console.error("Gagal sinkronisasi data TV:", err);
@@ -270,7 +283,7 @@
       const container = document.getElementById('log-feed');
       container.innerHTML = '';
 
-      if (allRows.length === 0) {
+      if (!allRows || allRows.length === 0) {
         container.innerHTML = `<div class="text-xs text-slate-500 italic text-center py-4">Belum ada data layanan</div>`;
         return;
       }
@@ -298,11 +311,15 @@
 
       let htmlContent = allRows.map(item => createCardHtml(item)).join('');
       
-      // Duplikasi list untuk infinite smooth scroll
-      container.innerHTML = htmlContent + htmlContent;
-
-      const durationSeconds = Math.max(15, allRows.length * 3);
-      container.style.setProperty('--scroll-duration', `${durationSeconds}s`);
+      // Duplikasi list jika data cukup banyak untuk infinite smooth scroll
+      if (allRows.length > 2) {
+        container.innerHTML = htmlContent + htmlContent;
+        const durationSeconds = Math.max(15, allRows.length * 3);
+        container.style.setProperty('--scroll-duration', `${durationSeconds}s`);
+      } else {
+        container.innerHTML = htmlContent;
+        container.style.animation = 'none';
+      }
     }
 
     // 5. Render Chart.js
