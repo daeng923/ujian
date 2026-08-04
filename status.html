@@ -52,7 +52,7 @@
     </div>
   </header>
 
-  <!-- MAIN DASHBOARD CONTENT (STRICT FLEX-1 FIT SCREEN) -->
+  <!-- MAIN DASHBOARD CONTENT -->
   <main class="flex-1 min-h-0 grid grid-cols-12 gap-3 overflow-hidden">
     
     <!-- KOLOM 1: RINGKASAN KPI (3 Cols) -->
@@ -96,7 +96,7 @@
 
     </section>
 
-    <!-- KOLOM 2: GRAFIK REKAPAN & DISTRIBUSI (5 Cols) -->
+    <!-- KOLOM 2: GRAFIK REKAPAN (5 Cols) -->
     <section class="col-span-5 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col shadow-xl min-h-0 overflow-hidden">
       <div class="flex items-center justify-between mb-2 flex-shrink-0">
         <h3 class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -111,7 +111,7 @@
       </div>
     </section>
 
-    <!-- KOLOM 3: LOG / PERMOHONAN REKAPAN TERBARU (4 Cols) -->
+    <!-- KOLOM 3: LOG REKAPAN TERBARU (4 Cols) -->
     <section class="col-span-4 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col shadow-xl min-h-0 overflow-hidden">
       <div class="flex items-center justify-between mb-2 border-b border-slate-800 pb-1.5 flex-shrink-0">
         <h3 class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -128,11 +128,11 @@
 
   </main>
 
-  <!-- FOOTER TV WITH RUNNING TEXT / STATUS -->
-  <header class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0">
+  <!-- FOOTER TV -->
+  <footer class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0">
     <div class="p-2.5 flex items-center justify-between text-xs px-5">
       <div class="flex items-center gap-3 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-        <span class="text-blue-400">MKWK.ORG</span>
+        <span class="text-blue-400">AIK.UMM.AC.ID</span>
         <span>•</span>
         <span>Layanan Akademik Al-Islam, Kemuhammadiyahan & MKWK</span>
       </div>
@@ -140,19 +140,19 @@
         Sinkronisasi Otomatis Tiap <span class="text-amber-400 font-bold">5 Menit</span>
       </div>
     </div>
-  </header>
+  </footer>
 
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzriVNdkWu1HikzUlQOtIAurzMeIqLBN-pc5rrN63L0dUlG8ioUzCkVijib24jHc5N7tQ/exec";
 
     let chartInstance = null;
 
-    // Helper: Format Tanggal ISO/Date ke Format Bersih (DD/MM/YYYY HH:mm)
+    // Format Tanggal
     function formatTanggal(rawDate) {
       if (!rawDate) return 'Baru Saja';
       try {
         const d = new Date(rawDate);
-        if (isNaN(d.getTime())) return rawDate.toString(); // Fallback jika string biasa
+        if (isNaN(d.getTime())) return rawDate.toString();
         const tgl = String(d.getDate()).padStart(2, '0');
         const bln = String(d.getMonth() + 1).padStart(2, '0');
         const thn = d.getFullYear();
@@ -164,12 +164,20 @@
       }
     }
 
-    // Helper: Cari value berdasarkan pola kata kunci header
-    function findValueByKeys(obj, possibleKeys) {
+    /**
+     * PENCARIAN FIELD FLEKSIBEL (NIM, NAMA, LAYANAN, KATEGORI)
+     */
+    function getValueByKeyPattern(obj, patterns) {
       const keys = Object.keys(obj);
-      for (let pKey of possibleKeys) {
-        const foundKey = keys.find(k => k.toLowerCase().trim() === pKey.toLowerCase());
-        if (foundKey && obj[foundKey]) return obj[foundKey];
+      for (let pattern of patterns) {
+        const matchedKey = keys.find(k => {
+          const cleanKey = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const cleanPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return cleanKey.includes(cleanPattern);
+        });
+        if (matchedKey && obj[matchedKey] !== undefined && obj[matchedKey] !== null && obj[matchedKey] !== '') {
+          return obj[matchedKey];
+        }
       }
       return null;
     }
@@ -197,7 +205,7 @@
       }
     }
 
-    // 3. Olah Data
+    // 3. Olah Data KPI & Log
     function processData(rows, totalCount) {
       document.getElementById('stat-total').innerText = totalCount || rows.length;
 
@@ -209,19 +217,21 @@
       const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
       rows.forEach(row => {
-        const rowStr = JSON.stringify(row).toLowerCase();
+        // Ambil kategori atau jenis layanan khusus dari kolom
+        const kategoriVal = (getValueByKeyPattern(row, ['kategori', 'jenis layanan', 'layanan', 'keperluan']) || '').toString().toLowerCase();
+        const fullRowStr = JSON.stringify(row).toLowerCase();
 
-        // Cek AIK vs MKWK
-        if (rowStr.includes('aik') || rowStr.includes('al-islam') || rowStr.includes('kemuhammadiyahan')) {
+        // Evaluasi Kategori AIK vs MKWK
+        if (kategoriVal.includes('aik') || kategoriVal.includes('al-islam') || kategoriVal.includes('kemuhammadiyahan') || fullRowStr.includes('aik')) {
           countAIK++;
-        } else if (rowStr.includes('mkwk') || rowStr.includes('pancasila') || rowStr.includes('kewarganegaraan') || rowStr.includes('indonesia') || rowStr.includes('agama')) {
+        } else if (kategoriVal.includes('mkwk') || kategoriVal.includes('pancasila') || kategoriVal.includes('kewarganegaraan') || kategoriVal.includes('indonesia') || kategoriVal.includes('agama') || fullRowStr.includes('mkwk')) {
           countMKWK++;
         } else {
-          countAIK++;
+          countAIK++; // Fallback default
         }
 
         // Cek Transaksi Hari Ini
-        const timeVal = findValueByKeys(row, ['timestamp', 'tanggal', 'waktu', 'created_at']);
+        const timeVal = getValueByKeyPattern(row, ['timestamp', 'tanggal', 'waktu', 'date']);
         if (timeVal && timeVal.toString().includes(todayStr)) {
           countToday++;
         }
@@ -231,7 +241,7 @@
       document.getElementById('stat-mkwk').innerText = countMKWK;
       document.getElementById('stat-today').innerText = countToday;
 
-      // Update Log Feed (Ambil 4 Log Terakhir)
+      // Render 4 Log Terakhir
       renderLogFeed(rows.slice(-4).reverse());
 
       // Render Chart
@@ -244,10 +254,14 @@
       container.innerHTML = '';
 
       recentRows.forEach((item) => {
-        const timeVal = findValueByKeys(item, ['timestamp', 'tanggal', 'waktu']) || 'Baru Saja';
-        const nameVal = findValueByKeys(item, ['nama lengkap', 'nama', 'nama mahasiswa', 'pemohon']) || 'Pemohon Layanan';
-        const nimVal = findValueByKeys(item, ['nim', 'nim/nidn', 'nidn', 'nomor induk']) || '-';
-        const serviceVal = findValueByKeys(item, ['jenis layanan', 'layanan', 'keperluan', 'kategori']) || 'Pengajuan Layanan';
+        // Cari nilai berdasarkan variasi nama kolom
+        const timeVal = getValueByKeyPattern(item, ['timestamp', 'tanggal', 'waktu', 'date']) || 'Baru Saja';
+        const nameVal = getValueByKeyPattern(item, ['nama lengkap', 'nama', 'pemohon', 'mahasiswa']) || 'Pemohon Layanan';
+        
+        // Pola kata kunci luas untuk NIM/NIDN/Nomor Induk
+        const nimVal = getValueByKeyPattern(item, ['nim', 'nidn', 'npm', 'nomor', 'no', 'id']) || '-';
+        
+        const serviceVal = getValueByKeyPattern(item, ['jenis layanan', 'layanan', 'keperluan', 'kategori', 'permohonan']) || 'Pengajuan Layanan';
 
         const div = document.createElement('div');
         div.className = "bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5 flex flex-col justify-between shadow-md";
@@ -255,12 +269,12 @@
         div.innerHTML = `
           <div class="flex justify-between items-center text-[10px] font-bold">
             <span class="text-amber-400 font-mono">${formatTanggal(timeVal)}</span>
-            <span class="text-slate-400 font-mono">NIM: <b class="text-slate-200">${nimVal}</b></span>
+            <span class="text-slate-400 font-mono">NIM: <b class="text-slate-100">${nimVal}</b></span>
           </div>
           <div class="text-xs font-bold text-white truncate">${nameVal}</div>
           <div class="text-[10px] text-slate-400 truncate flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-            <span>${serviceVal}</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0"></span>
+            <span class="truncate">${serviceVal}</span>
           </div>
         `;
 
