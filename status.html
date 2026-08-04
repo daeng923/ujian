@@ -178,7 +178,7 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzriVNdkWu1HikzUlQOtIAurzMeIqLBN-pc5rrN63L0dUlG8ioUzCkVijib24jHc5N7tQ/exec";
 
     let chartInstance = null;
-    let petugasChartInstance = null; // Variabel chart petugas
+    let petugasChartInstance = null;
 
     // Format Tanggal
     function formatTanggal(rawDate) {
@@ -254,7 +254,7 @@
       let countAIK = 0;
       let countMKWK = 0;
       let countToday = 0;
-      let petugasMap = {}; // Penyimpanan hitung per petugas
+      let petugasMap = {};
 
       const now = new Date();
       const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -283,7 +283,7 @@
         if (!petugas || petugas.toString().trim() === '') petugas = 'Belum Ditugaskan';
         petugas = titleCase(petugas.toString().trim());
 
-        if (petugas !== 'Belum Ditugaskan') { // Opsional: mengabaikan yang kosong
+        if (petugas !== 'Belum Ditugaskan') {
           petugasMap[petugas] = (petugasMap[petugas] || 0) + 1;
         }
       });
@@ -292,7 +292,6 @@
       document.getElementById('stat-mkwk').innerText = countMKWK;
       document.getElementById('stat-today').innerText = countToday;
 
-      // Render Data
       renderLogFeed(rows.slice().reverse());
       renderCharts(countAIK, countMKWK, petugasMap);
     }
@@ -375,12 +374,11 @@
       const ctx2 = document.getElementById('petugasChart').getContext('2d');
       if (petugasChartInstance) petugasChartInstance.destroy();
 
-      // Urutkan petugas dari yang terbanyak tanpa slice/limit
       const sortedPetugas = Object.keys(petugasMap)
         .map(name => ({ name: name, count: petugasMap[name] }))
         .sort((a, b) => b.count - a.count);
 
-      const pLabels = sortedPetugas.map(p => p.name.substring(0, 15) + (p.name.length > 15 ? '...' : ''));
+      const pLabels = sortedPetugas.map(p => p.name.substring(0, 18) + (p.name.length > 18 ? '...' : ''));
       const pData = sortedPetugas.map(p => p.count);
 
       petugasChartInstance = new Chart(ctx2, {
@@ -392,16 +390,28 @@
             backgroundColor: 'rgba(245, 158, 11, 0.85)', // Amber
             borderColor: '#f59e0b',
             borderWidth: 1,
-            borderRadius: 6
+            borderRadius: 6,
+            barPercentage: 0.8 // Memberi sedikit ruang antar bar
           }]
         },
         options: {
-          indexAxis: 'y', // Jadikan Horizontal Bar Chart
-          responsive: true, maintainAspectRatio: false,
+          indexAxis: 'y', 
+          responsive: true, 
+          maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            x: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { font: { size: 10 }, stepSize: 1 } },
-            y: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
+            x: { 
+              beginAtZero: true, 
+              grid: { color: 'rgba(255, 255, 255, 0.05)' }, 
+              ticks: { font: { size: 10 }, stepSize: 1 } 
+            },
+            y: { 
+              grid: { display: false }, 
+              ticks: { 
+                autoSkip: false, // MEMAKSA SEMUA NAMA MUNCUL (TIDAK ADA YANG DI-SKIP)
+                font: { size: 9, weight: 'bold' } // MENGEKECILKAN FONT SIZE
+              } 
+            }
           }
         }
       });
