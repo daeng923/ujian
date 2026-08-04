@@ -20,6 +20,18 @@
       background-color: #0b1120;
       user-select: none;
     }
+
+    /* Custom Scrollbar untuk Auto-Scroll Feed yang Bersih */
+    #log-feed::-webkit-scrollbar {
+      width: 4px;
+    }
+    #log-feed::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    #log-feed::-webkit-scrollbar-thumb {
+      background: rgba(59, 130, 246, 0.4);
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body class="h-screen w-screen text-slate-100 flex flex-col justify-between p-4 gap-3 overflow-hidden">
@@ -111,17 +123,17 @@
       </div>
     </section>
 
-    <!-- KOLOM 3: LOG REKAPAN TERBARU (4 Cols) -->
+    <!-- KOLOM 3: LOG REKAPAN TERBARU DENGAN AUTO-SCROLL (4 Cols) -->
     <section class="col-span-4 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col shadow-xl min-h-0 overflow-hidden">
       <div class="flex items-center justify-between mb-2 border-b border-slate-800 pb-1.5 flex-shrink-0">
         <h3 class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-          <span>📑</span> Aktivitas Masuk Terbaru
+          <span>📑</span> Daftar Layanan Terdaftar (Live)
         </h3>
-        <span class="text-[9px] bg-slate-800 text-slate-400 font-bold px-2 py-0.5 rounded">Terupdate</span>
+        <span class="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Auto-Scroll</span>
       </div>
 
-      <!-- Feed Container -->
-      <div id="log-feed" class="flex-1 flex flex-col gap-2 min-h-0 overflow-hidden justify-around">
+      <!-- Feed Container dengan Scroll Otomatis -->
+      <div id="log-feed" class="flex-1 flex flex-col gap-2.5 min-h-0 overflow-y-auto pr-1">
         <!-- Log item dinamik -->
       </div>
     </section>
@@ -132,7 +144,7 @@
   <footer class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0">
     <div class="p-2.5 flex items-center justify-between text-xs px-5">
       <div class="flex items-center gap-3 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-        <span class="text-blue-400">AIK.UMM.AC.ID</span>
+        <span class="text-blue-400">MKWK.ORG</span>
         <span>•</span>
         <span>Layanan Akademik Al-Islam, Kemuhammadiyahan & MKWK</span>
       </div>
@@ -146,6 +158,7 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzriVNdkWu1HikzUlQOtIAurzMeIqLBN-pc5rrN63L0dUlG8ioUzCkVijib24jHc5N7tQ/exec";
 
     let chartInstance = null;
+    let autoScrollInterval = null;
 
     // Format Tanggal
     function formatTanggal(rawDate) {
@@ -164,9 +177,7 @@
       }
     }
 
-    /**
-     * PENCARIAN FIELD FLEKSIBEL (NIM, NAMA, LAYANAN, KATEGORI)
-     */
+    // Pencarian Field Fleksibel Berdasarkan Header
     function getValueByKeyPattern(obj, patterns) {
       const keys = Object.keys(obj);
       for (let pattern of patterns) {
@@ -217,20 +228,17 @@
       const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
       rows.forEach(row => {
-        // Ambil kategori atau jenis layanan khusus dari kolom
         const kategoriVal = (getValueByKeyPattern(row, ['kategori', 'jenis layanan', 'layanan', 'keperluan']) || '').toString().toLowerCase();
         const fullRowStr = JSON.stringify(row).toLowerCase();
 
-        // Evaluasi Kategori AIK vs MKWK
         if (kategoriVal.includes('aik') || kategoriVal.includes('al-islam') || kategoriVal.includes('kemuhammadiyahan') || fullRowStr.includes('aik')) {
           countAIK++;
         } else if (kategoriVal.includes('mkwk') || kategoriVal.includes('pancasila') || kategoriVal.includes('kewarganegaraan') || kategoriVal.includes('indonesia') || kategoriVal.includes('agama') || fullRowStr.includes('mkwk')) {
           countMKWK++;
         } else {
-          countAIK++; // Fallback default
+          countAIK++;
         }
 
-        // Cek Transaksi Hari Ini
         const timeVal = getValueByKeyPattern(row, ['timestamp', 'tanggal', 'waktu', 'date']);
         if (timeVal && timeVal.toString().includes(todayStr)) {
           countToday++;
@@ -241,45 +249,64 @@
       document.getElementById('stat-mkwk').innerText = countMKWK;
       document.getElementById('stat-today').innerText = countToday;
 
-      // Render 4 Log Terakhir
-      renderLogFeed(rows.slice(-4).reverse());
+      // Render Seluruh Data untuk Feed (Urutkan dari yang terbaru)
+      renderLogFeed(rows.slice().reverse());
 
       // Render Chart
       renderChart(countAIK, countMKWK);
     }
 
-    // 4. Render Log Feed
-    function renderLogFeed(recentRows) {
+    // 4. Render Log Feed dengan Informasi Petugas & Auto-Scroll
+    function renderLogFeed(allRows) {
       const container = document.getElementById('log-feed');
       container.innerHTML = '';
 
-      recentRows.forEach((item) => {
-        // Cari nilai berdasarkan variasi nama kolom
+      allRows.forEach((item) => {
         const timeVal = getValueByKeyPattern(item, ['timestamp', 'tanggal', 'waktu', 'date']) || 'Baru Saja';
         const nameVal = getValueByKeyPattern(item, ['nama lengkap', 'nama', 'pemohon', 'mahasiswa']) || 'Pemohon Layanan';
-        
-        // Pola kata kunci luas untuk NIM/NIDN/Nomor Induk
         const nimVal = getValueByKeyPattern(item, ['nim', 'nidn', 'npm', 'nomor', 'no', 'id']) || '-';
         
-        const serviceVal = getValueByKeyPattern(item, ['jenis layanan', 'layanan', 'keperluan', 'kategori', 'permohonan']) || 'Pengajuan Layanan';
+        // Membaca Staf / Petugas yang melayani dari data
+        const petugasVal = getValueByKeyPattern(item, ['petugas', 'staf', 'operator', 'admin', 'dilayani oleh']) || 'Belum Ditugaskan';
 
         const div = document.createElement('div');
-        div.className = "bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5 flex flex-col justify-between shadow-md";
+        div.className = "bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col justify-between shadow-md flex-shrink-0";
 
         div.innerHTML = `
-          <div class="flex justify-between items-center text-[10px] font-bold">
+          <div class="flex justify-between items-center text-[10px] font-bold mb-1">
             <span class="text-amber-400 font-mono">${formatTanggal(timeVal)}</span>
             <span class="text-slate-400 font-mono">NIM: <b class="text-slate-100">${nimVal}</b></span>
           </div>
-          <div class="text-xs font-bold text-white truncate">${nameVal}</div>
-          <div class="text-[10px] text-slate-400 truncate flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0"></span>
-            <span class="truncate">${serviceVal}</span>
+          <div class="text-xs font-bold text-white truncate mb-1">${nameVal}</div>
+          <div class="text-[10px] text-slate-400 flex items-center justify-between border-t border-slate-800/60 pt-1.5 mt-0.5">
+            <span class="text-slate-400">Petugas / Staf:</span>
+            <span class="text-emerald-400 font-bold truncate max-w-[60%]">${petugasVal}</span>
           </div>
         `;
 
         container.appendChild(div);
       });
+
+      // Mulai Auto-Scroll Halus
+      startAutoScroll(container);
+    }
+
+    // Fungsi Auto-Scroll Berkelanjutan
+    function startAutoScroll(container) {
+      clearInterval(autoScrollInterval);
+      let scrollSpeed = 1; // Kecepatan scroll pixel per interval
+      let delay = 40;      // Interval waktu dalam milidetik
+
+      autoScrollInterval = setInterval(() => {
+        if (!container) return;
+        
+        // Jika sudah sampai bawah, kembali ke atas secara mulus
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 2) {
+          container.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          container.scrollBy({ top: scrollSpeed, behavior: 'linear' });
+        }
+      }, delay);
     }
 
     // 5. Render Chart.js
