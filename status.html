@@ -21,13 +21,22 @@
       user-select: none;
     }
 
-    /* Hide Scrollbar agar Tampilan TV Bersih */
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
+    /* ANIMASI CSS HARDWARE ACCELERATED UNTUK SCROLLING TANPA PATAH-PATAH */
+    .scroll-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem; /* 10px */
+      will-change: transform;
+      animation: smoothScroll var(--scroll-duration, 20s) linear infinite;
     }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
+
+    @keyframes smoothScroll {
+      0% {
+        transform: translateY(0);
+      }
+      100% {
+        transform: translateY(-50%);
+      }
     }
   </style>
 </head>
@@ -120,19 +129,19 @@
       </div>
     </section>
 
-    <!-- KOLOM 3: LOG REKAPAN TERBARU DENGAN AUTO-SCROLL (4 Cols) -->
+    <!-- KOLOM 3: LOG REKAPAN TERBARU DENGAN HARDWARE-ACCELERATED SMOOTH SCROLL (4 Cols) -->
     <section class="col-span-4 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col shadow-xl min-h-0 overflow-hidden">
       <div class="flex items-center justify-between mb-2 border-b border-slate-800 pb-1.5 flex-shrink-0">
         <h3 class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
           <span>📑</span> Daftar Layanan Terdaftar (Live)
         </h3>
-        <span class="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Auto-Scroll</span>
+        <span class="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Smooth Scroll</span>
       </div>
 
-      <!-- Wrapper Scroll -->
-      <div id="scroll-wrapper" class="flex-1 relative min-h-0 overflow-hidden">
-        <div id="log-feed" class="no-scrollbar absolute w-full inset-0 overflow-y-auto flex flex-col gap-2.5 pr-1">
-          <!-- Item Log -->
+      <!-- Wrapper & Animated Scroll Content -->
+      <div class="flex-1 relative min-h-0 overflow-hidden">
+        <div id="log-feed" class="scroll-container">
+          <!-- Item Log dikloning oleh JavaScript -->
         </div>
       </div>
     </section>
@@ -157,7 +166,6 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzriVNdkWu1HikzUlQOtIAurzMeIqLBN-pc5rrN63L0dUlG8ioUzCkVijib24jHc5N7tQ/exec";
 
     let chartInstance = null;
-    let scrollAnimationId = null;
 
     // Format Tanggal
     function formatTanggal(rawDate) {
@@ -176,7 +184,7 @@
       }
     }
 
-    // Pencarian Field Fleksibel Berdasarkan Header
+    // Pencarian Field Fleksibel
     function getValueByKeyPattern(obj, patterns) {
       const keys = Object.keys(obj);
       for (let pattern of patterns) {
@@ -248,14 +256,14 @@
       document.getElementById('stat-mkwk').innerText = countMKWK;
       document.getElementById('stat-today').innerText = countToday;
 
-      // Render Feed
+      // Render Log Feed
       renderLogFeed(rows.slice().reverse());
 
       // Render Chart
       renderChart(countAIK, countMKWK);
     }
 
-    // 4. Render Log Feed dengan Keterangan "Dilayani oleh..." & Auto-Scroll
+    // 4. Render Log Feed Menggunakan Animasi GPU
     function renderLogFeed(allRows) {
       const container = document.getElementById('log-feed');
       container.innerHTML = '';
@@ -265,70 +273,36 @@
         return;
       }
 
-      // Buat Elemen Card
-      allRows.forEach((item) => {
+      // Render Item Asli
+      const createCardHtml = (item) => {
         const timeVal = getValueByKeyPattern(item, ['timestamp', 'tanggal', 'waktu', 'date']) || 'Baru Saja';
         const nameVal = getValueByKeyPattern(item, ['nama lengkap', 'nama', 'pemohon', 'mahasiswa']) || 'Pemohon Layanan';
         const nimVal = getValueByKeyPattern(item, ['nim', 'nidn', 'npm', 'nomor', 'no', 'id']) || '-';
-        
-        // Mengambil nama Petugas / Staf
         const petugasVal = getValueByKeyPattern(item, ['petugas', 'staf', 'operator', 'admin', 'dilayani oleh', 'penanggung jawab']);
         const ketePetugas = petugasVal ? `Dilayani oleh: <b>${petugasVal}</b>` : `Dilayani oleh: <span class="italic text-slate-500">Belum Ditugaskan</span>`;
 
-        const div = document.createElement('div');
-        div.className = "log-card bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col justify-between shadow-md flex-shrink-0";
-
-        div.innerHTML = `
-          <div class="flex justify-between items-center text-[10px] font-bold mb-1">
-            <span class="text-amber-400 font-mono">${formatTanggal(timeVal)}</span>
-            <span class="text-slate-400 font-mono">NIM: <b class="text-slate-100">${nimVal}</b></span>
-          </div>
-          <div class="text-xs font-bold text-white truncate mb-1.5">${nameVal}</div>
-          <div class="text-[10px] text-slate-400 flex items-center border-t border-slate-800/60 pt-1.5">
-            <span class="text-emerald-400 truncate">${ketePetugas}</span>
+        return `
+          <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col justify-between shadow-md flex-shrink-0">
+            <div class="flex justify-between items-center text-[10px] font-bold mb-1">
+              <span class="text-amber-400 font-mono">${formatTanggal(timeVal)}</span>
+              <span class="text-slate-400 font-mono">NIM: <b class="text-slate-100">${nimVal}</b></span>
+            </div>
+            <div class="text-xs font-bold text-white truncate mb-1.5">${nameVal}</div>
+            <div class="text-[10px] text-slate-400 flex items-center border-t border-slate-800/60 pt-1.5">
+              <span class="text-emerald-400 truncate">${ketePetugas}</span>
+            </div>
           </div>
         `;
+      };
 
-        container.appendChild(div);
-      });
+      let htmlContent = allRows.map(item => createCardHtml(item)).join('');
+      
+      // Duplikasi list agar loop scrolling CSS berjalan 100% mulus dan kontinu tanpa terputus
+      container.innerHTML = htmlContent + htmlContent;
 
-      // Jalankan Auto Scroll jika konten lebih tinggi dari container
-      setTimeout(() => {
-        startContinuousScroll(container);
-      }, 500);
-    }
-
-    // FUNGSI AUTO SCROLL KONTINU (LOOPING SMOTH)
-    function startContinuousScroll(container) {
-      if (scrollAnimationId) {
-        cancelAnimationFrame(scrollAnimationId);
-      }
-
-      // Jika jumlah item cukup banyak, lakukan cloning agar scrolling bisa berkelanjutan
-      const cards = container.querySelectorAll('.log-card');
-      if (cards.length > 3) {
-        cards.forEach(card => {
-          const clone = card.cloneNode(true);
-          container.appendChild(clone);
-        });
-      }
-
-      let speed = 0.6; // Kecepatan Scroll (PX)
-
-      function step() {
-        if (!container) return;
-        
-        container.scrollTop += speed;
-
-        // Jika sudah mencapai setengah tinggi scroll (konten utama selesai), reset ke atas secara halus
-        if (container.scrollTop >= container.scrollHeight / 2) {
-          container.scrollTop = 0;
-        }
-
-        scrollAnimationId = requestAnimationFrame(step);
-      }
-
-      scrollAnimationId = requestAnimationFrame(step);
+      // Hitung kecepatan berdasarkan total item (sekitar 3 detik per item agar nyaman dibaca)
+      const durationSeconds = Math.max(15, allRows.length * 3);
+      container.style.setProperty('--scroll-duration', `${durationSeconds}s`);
     }
 
     // 5. Render Chart.js
