@@ -22,19 +22,19 @@
     }
   </style>
 </head>
-<body class="h-screen w-screen text-slate-100 flex flex-col justify-between p-4 gap-4">
+<body class="h-screen w-screen text-slate-100 flex flex-col justify-between p-4 gap-3 overflow-hidden">
 
   <!-- HEADER TV -->
-  <header class="flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-2xl backdrop-blur-md flex-shrink-0">
+  <header class="flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 shadow-2xl backdrop-blur-md flex-shrink-0">
     <div class="flex items-center gap-3">
-      <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center border border-blue-400 shadow-lg shadow-blue-500/30 text-2xl">
+      <div class="w-11 h-11 bg-blue-600 rounded-xl flex items-center justify-center border border-blue-400 shadow-lg shadow-blue-500/30 text-xl">
         🏛️
       </div>
       <div>
-        <h1 class="text-xl font-black tracking-wide text-white uppercase">REKAPAN LAYANAN AIK & MKWK</h1>
-        <div class="flex items-center gap-2 mt-0.5">
+        <h1 class="text-lg font-black tracking-wide text-white uppercase leading-none">REKAPAN LAYANAN AIK & MKWK</h1>
+        <div class="flex items-center gap-2 mt-1">
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-lg shadow-emerald-500/50"></span>
-          <span class="text-[11px] font-bold text-emerald-400 tracking-wider uppercase">Siaran Informasi Langsung (Live)</span>
+          <span class="text-[10px] font-bold text-emerald-400 tracking-wider uppercase">Siaran Informasi Langsung (Live)</span>
         </div>
       </div>
     </div>
@@ -43,85 +43,85 @@
     <div class="flex items-center gap-6">
       <div class="text-right border-r border-slate-800 pr-6">
         <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Total Layanan</span>
-        <span class="text-2xl font-black text-amber-400 font-mono" id="stat-total">0</span>
+        <span class="text-2xl font-black text-amber-400 font-mono leading-none" id="stat-total">0</span>
       </div>
       <div class="text-right">
         <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block" id="live-date">Memuat...</span>
-        <span class="text-3xl font-black text-white tracking-tight font-mono" id="live-time">00:00:00</span>
+        <span class="text-2xl font-black text-white tracking-tight font-mono leading-none" id="live-time">00:00:00</span>
       </div>
     </div>
   </header>
 
-  <!-- MAIN DASHBOARD CONTENT (3 COLUMNS FIT SCREEN) -->
-  <main class="flex-1 min-h-0 grid grid-cols-12 gap-4">
+  <!-- MAIN DASHBOARD CONTENT (STRICT FLEX-1 FIT SCREEN) -->
+  <main class="flex-1 min-h-0 grid grid-cols-12 gap-3 overflow-hidden">
     
     <!-- KOLOM 1: RINGKASAN KPI (3 Cols) -->
-    <section class="col-span-3 flex flex-col gap-3 h-full">
+    <section class="col-span-3 flex flex-col gap-2.5 h-full min-h-0">
       
       <!-- Card Layanan AIK -->
-      <div class="flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl relative overflow-hidden">
+      <div class="flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl min-h-0">
         <div class="flex justify-between items-start">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Layanan AIK</span>
-          <span class="p-2 bg-blue-500/10 text-blue-400 rounded-lg text-lg">📖</span>
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Layanan AIK</span>
+          <span class="p-1.5 bg-blue-500/10 text-blue-400 rounded-lg text-base">📖</span>
         </div>
         <div>
-          <h2 class="text-3xl font-black text-blue-400 font-mono" id="stat-aik">0</h2>
-          <p class="text-[11px] text-slate-400 mt-1">Al-Islam & Kemuhammadiyahan</p>
+          <h2 class="text-2xl font-black text-blue-400 font-mono leading-tight" id="stat-aik">0</h2>
+          <p class="text-[10px] text-slate-400 mt-0.5">Al-Islam & Kemuhammadiyahan</p>
         </div>
       </div>
 
       <!-- Card Layanan MKWK -->
-      <div class="flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl relative overflow-hidden">
+      <div class="flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl min-h-0">
         <div class="flex justify-between items-start">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Layanan MKWK</span>
-          <span class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg text-lg">🎓</span>
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Layanan MKWK</span>
+          <span class="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg text-base">🎓</span>
         </div>
         <div>
-          <h2 class="text-3xl font-black text-emerald-400 font-mono" id="stat-mkwk">0</h2>
-          <p class="text-[11px] text-slate-400 mt-1">Matakuliah Wajib Kurikulum</p>
+          <h2 class="text-2xl font-black text-emerald-400 font-mono leading-tight" id="stat-mkwk">0</h2>
+          <p class="text-[10px] text-slate-400 mt-0.5">Matakuliah Wajib Kurikulum</p>
         </div>
       </div>
 
       <!-- Card Hari Ini -->
-      <div class="flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl relative overflow-hidden">
+      <div class="flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl min-h-0">
         <div class="flex justify-between items-start">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Permohonan Hari Ini</span>
-          <span class="p-2 bg-amber-500/10 text-amber-400 rounded-lg text-lg">⚡</span>
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Permohonan Hari Ini</span>
+          <span class="p-1.5 bg-amber-500/10 text-amber-400 rounded-lg text-base">⚡</span>
         </div>
         <div>
-          <h2 class="text-3xl font-black text-amber-400 font-mono" id="stat-today">0</h2>
-          <p class="text-[11px] text-slate-400 mt-1">Total masuk hari ini</p>
+          <h2 class="text-2xl font-black text-amber-400 font-mono leading-tight" id="stat-today">0</h2>
+          <p class="text-[10px] text-slate-400 mt-0.5">Total masuk hari ini</p>
         </div>
       </div>
 
     </section>
 
     <!-- KOLOM 2: GRAFIK REKAPAN & DISTRIBUSI (5 Cols) -->
-    <section class="col-span-5 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl min-h-0">
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+    <section class="col-span-5 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col shadow-xl min-h-0 overflow-hidden">
+      <div class="flex items-center justify-between mb-2 flex-shrink-0">
+        <h3 class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
           <span>📊</span> Visualisasi Tren & Rekapan Layanan
         </h3>
-        <span class="text-[10px] text-slate-500 font-mono uppercase">Live Chart</span>
+        <span class="text-[9px] text-slate-500 font-mono uppercase">Live Chart</span>
       </div>
       
-      <!-- Canvas Chart JS -->
+      <!-- Canvas Chart JS Container -->
       <div class="flex-1 w-full min-h-0 relative">
         <canvas id="layananChart"></canvas>
       </div>
     </section>
 
     <!-- KOLOM 3: LOG / PERMOHONAN REKAPAN TERBARU (4 Cols) -->
-    <section class="col-span-4 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl min-h-0">
-      <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
-        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+    <section class="col-span-4 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col shadow-xl min-h-0 overflow-hidden">
+      <div class="flex items-center justify-between mb-2 border-b border-slate-800 pb-1.5 flex-shrink-0">
+        <h3 class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
           <span>📑</span> Aktivitas Masuk Terbaru
         </h3>
-        <span class="text-[10px] bg-slate-800 text-slate-400 font-bold px-2 py-0.5 rounded">Terupdate</span>
+        <span class="text-[9px] bg-slate-800 text-slate-400 font-bold px-2 py-0.5 rounded">Terupdate</span>
       </div>
 
       <!-- Feed Container -->
-      <div id="log-feed" class="flex-1 flex flex-col gap-2.5 overflow-hidden">
+      <div id="log-feed" class="flex-1 flex flex-col gap-2 min-h-0 overflow-hidden justify-around">
         <!-- Log item dinamik -->
       </div>
     </section>
@@ -129,23 +129,50 @@
   </main>
 
   <!-- FOOTER TV WITH RUNNING TEXT / STATUS -->
-  <footer class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0">
-    <div class="p-3 flex items-center justify-between text-xs px-6">
-      <div class="flex items-center gap-4 text-slate-400 font-bold uppercase text-[11px] tracking-wider">
+  <header class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0">
+    <div class="p-2.5 flex items-center justify-between text-xs px-5">
+      <div class="flex items-center gap-3 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
         <span class="text-blue-400">MKWK.ORG</span>
         <span>•</span>
         <span>Layanan Akademik Al-Islam, Kemuhammadiyahan & MKWK</span>
       </div>
-      <div class="text-slate-400 font-mono text-[11px]">
+      <div class="text-slate-400 font-mono text-[10px]">
         Sinkronisasi Otomatis Tiap <span class="text-amber-400 font-bold">5 Menit</span>
       </div>
     </div>
-  </footer>
+  </header>
 
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzriVNdkWu1HikzUlQOtIAurzMeIqLBN-pc5rrN63L0dUlG8ioUzCkVijib24jHc5N7tQ/exec";
 
     let chartInstance = null;
+
+    // Helper: Format Tanggal ISO/Date ke Format Bersih (DD/MM/YYYY HH:mm)
+    function formatTanggal(rawDate) {
+      if (!rawDate) return 'Baru Saja';
+      try {
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return rawDate.toString(); // Fallback jika string biasa
+        const tgl = String(d.getDate()).padStart(2, '0');
+        const bln = String(d.getMonth() + 1).padStart(2, '0');
+        const thn = d.getFullYear();
+        const jam = String(d.getHours()).padStart(2, '0');
+        const mnt = String(d.getMinutes()).padStart(2, '0');
+        return `${tgl}/${bln}/${thn} ${jam}:${mnt}`;
+      } catch (e) {
+        return rawDate.toString();
+      }
+    }
+
+    // Helper: Cari value berdasarkan pola kata kunci header
+    function findValueByKeys(obj, possibleKeys) {
+      const keys = Object.keys(obj);
+      for (let pKey of possibleKeys) {
+        const foundKey = keys.find(k => k.toLowerCase().trim() === pKey.toLowerCase());
+        if (foundKey && obj[foundKey]) return obj[foundKey];
+      }
+      return null;
+    }
 
     // 1. Clock Realtime
     function updateClock() {
@@ -156,7 +183,7 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 2. Fetch Data dari GAS & Proses Rekapan
+    // 2. Fetch Data dari GAS
     async function fetchData() {
       try {
         const res = await fetch(GAS_URL);
@@ -170,7 +197,7 @@
       }
     }
 
-    // 3. Olah Data untuk Grafik, KPI, dan Feed Log
+    // 3. Olah Data
     function processData(rows, totalCount) {
       document.getElementById('stat-total').innerText = totalCount || rows.length;
 
@@ -178,71 +205,60 @@
       let countMKWK = 0;
       let countToday = 0;
 
-      const nowStr = new Date().toLocaleDateString('id-ID');
-      const monthlyStats = {};
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
       rows.forEach(row => {
-        // Ambil string dari objek row
         const rowStr = JSON.stringify(row).toLowerCase();
 
-        // 1. Cek Kategori AIK / MKWK
+        // Cek AIK vs MKWK
         if (rowStr.includes('aik') || rowStr.includes('al-islam') || rowStr.includes('kemuhammadiyahan')) {
           countAIK++;
         } else if (rowStr.includes('mkwk') || rowStr.includes('pancasila') || rowStr.includes('kewarganegaraan') || rowStr.includes('indonesia') || rowStr.includes('agama')) {
           countMKWK++;
         } else {
-          // Default seimbang/kategori umum
           countAIK++;
         }
 
-        // 2. Cek Transaksi Hari Ini
-        const timestamp = row['Timestamp'] || row['Tanggal'] || '';
-        if (timestamp && timestamp.toString().includes(nowStr)) {
+        // Cek Transaksi Hari Ini
+        const timeVal = findValueByKeys(row, ['timestamp', 'tanggal', 'waktu', 'created_at']);
+        if (timeVal && timeVal.toString().includes(todayStr)) {
           countToday++;
         }
       });
-
-      // Jika kategori tidak terdeteksi eksplisit dari kata kunci, buat estimasi proporsional
-      if (countAIK === 0 && countMKWK === 0) {
-        countAIK = Math.round(rows.length * 0.55);
-        countMKWK = rows.length - countAIK;
-      }
 
       document.getElementById('stat-aik').innerText = countAIK;
       document.getElementById('stat-mkwk').innerText = countMKWK;
       document.getElementById('stat-today').innerText = countToday;
 
-      // Update Feed 5 Log Terbaru
-      renderLogFeed(rows.slice(-5).reverse());
+      // Update Log Feed (Ambil 4 Log Terakhir)
+      renderLogFeed(rows.slice(-4).reverse());
 
-      // Render atau Update Chart
+      // Render Chart
       renderChart(countAIK, countMKWK);
     }
 
-    // 4. Render Log Feed Masuk Terbaru (Tanpa Terpotong)
+    // 4. Render Log Feed
     function renderLogFeed(recentRows) {
       const container = document.getElementById('log-feed');
       container.innerHTML = '';
 
-      recentRows.forEach((item, index) => {
-        const keys = Object.keys(item);
-        
-        // Cari field nama/layanan/timestamp
-        const timeVal = item['Timestamp'] || item['Tanggal'] || 'Baru Saja';
-        const nameVal = item['Nama'] || item['Nama Lengkap'] || item[keys[1]] || 'Pemohon Layanan';
-        const serviceVal = item['Layanan'] || item['Jenis Layanan'] || item[keys[2]] || 'Pengajuan Layanan';
-        const idVal = item['NIM'] || item['NIM/NIDN'] || item['NIDN'] || '-';
+      recentRows.forEach((item) => {
+        const timeVal = findValueByKeys(item, ['timestamp', 'tanggal', 'waktu']) || 'Baru Saja';
+        const nameVal = findValueByKeys(item, ['nama lengkap', 'nama', 'nama mahasiswa', 'pemohon']) || 'Pemohon Layanan';
+        const nimVal = findValueByKeys(item, ['nim', 'nim/nidn', 'nidn', 'nomor induk']) || '-';
+        const serviceVal = findValueByKeys(item, ['jenis layanan', 'layanan', 'keperluan', 'kategori']) || 'Pengajuan Layanan';
 
         const div = document.createElement('div');
-        div.className = "bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col justify-between gap-1 shadow-md";
+        div.className = "bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5 flex flex-col justify-between shadow-md";
 
         div.innerHTML = `
           <div class="flex justify-between items-center text-[10px] font-bold">
-            <span class="text-amber-400 font-mono">${timeVal}</span>
-            <span class="text-slate-500 font-mono">NIM: ${idVal}</span>
+            <span class="text-amber-400 font-mono">${formatTanggal(timeVal)}</span>
+            <span class="text-slate-400 font-mono">NIM: <b class="text-slate-200">${nimVal}</b></span>
           </div>
-          <div class="text-sm font-bold text-white truncate">${nameVal}</div>
-          <div class="text-[11px] text-slate-400 truncate flex items-center gap-1">
+          <div class="text-xs font-bold text-white truncate">${nameVal}</div>
+          <div class="text-[10px] text-slate-400 truncate flex items-center gap-1">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
             <span>${serviceVal}</span>
           </div>
@@ -265,46 +281,41 @@
         data: {
           labels: ['Layanan AIK', 'Layanan MKWK'],
           datasets: [{
-            label: 'Jumlah Layanan Terrekam',
+            label: 'Jumlah Layanan',
             data: [aikCount, mkwkCount],
             backgroundColor: [
-              'rgba(59, 130, 246, 0.85)', // Blue
-              'rgba(16, 185, 129, 0.85)'  // Emerald
+              'rgba(59, 130, 246, 0.85)',
+              'rgba(16, 185, 129, 0.85)'
             ],
             borderColor: [
               '#3b82f6',
               '#10b981'
             ],
             borderWidth: 2,
-            borderRadius: 12
+            borderRadius: 8
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { display: false },
-            tooltip: {
-              bodyFont: { size: 14, family: 'Plus Jakarta Sans' },
-              titleFont: { size: 14, family: 'Plus Jakarta Sans' }
-            }
+            legend: { display: false }
           },
           scales: {
             y: {
               beginAtZero: true,
               grid: { color: 'rgba(255, 255, 255, 0.05)' },
-              ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11 } }
+              ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 10 } }
             },
             x: {
               grid: { display: false },
-              ticks: { color: '#e2e8f0', font: { family: 'Plus Jakarta Sans', size: 12, weight: 'bold' } }
+              ticks: { color: '#e2e8f0', font: { family: 'Plus Jakarta Sans', size: 11, weight: 'bold' } }
             }
           }
         }
       });
     }
 
-    // Load data awal & sinkronisasi berkala tiap 5 menit
     fetchData();
     setInterval(fetchData, 300000);
   </script>
