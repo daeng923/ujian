@@ -25,18 +25,14 @@
     .scroll-container {
       display: flex;
       flex-direction: column;
-      gap: 0.625rem; /* 10px */
+      gap: 0.625rem;
       will-change: transform;
       animation: smoothScroll var(--scroll-duration, 20s) linear infinite;
     }
 
     @keyframes smoothScroll {
-      0% {
-        transform: translateY(0);
-      }
-      100% {
-        transform: translateY(-50%);
-      }
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-50%); }
     }
   </style>
 </head>
@@ -47,11 +43,7 @@
     <div class="flex items-center gap-3.5">
       <!-- Kotak Logo Utama Berwarna Putih -->
       <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-slate-200 shadow-md p-1 flex-shrink-0 overflow-hidden">
-        <img 
-          src="logomkwk-removebg-preview.png" 
-          alt="Logo MKWK" 
-          class="w-full h-full object-contain"
-        >
+        <img src="logomkwk-removebg-preview.png" alt="Logo MKWK" class="w-full h-full object-contain">
       </div>
       <div>
         <h1 class="text-lg font-black tracking-wide text-white uppercase leading-none">REKAPAN LAYANAN AIK & MKWK</h1>
@@ -81,7 +73,6 @@
     <!-- KOLOM 1: RINGKASAN KPI (3 Cols) -->
     <section class="col-span-3 flex flex-col gap-2.5 h-full min-h-0">
       
-      <!-- Card Layanan AIK -->
       <div class="flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl min-h-0">
         <div class="flex justify-between items-start">
           <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Layanan AIK</span>
@@ -93,7 +84,6 @@
         </div>
       </div>
 
-      <!-- Card Layanan MKWK -->
       <div class="flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl min-h-0">
         <div class="flex justify-between items-start">
           <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Layanan MKWK</span>
@@ -105,7 +95,6 @@
         </div>
       </div>
 
-      <!-- Card Hari Ini -->
       <div class="flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-xl min-h-0">
         <div class="flex justify-between items-start">
           <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Permohonan Hari Ini</span>
@@ -119,31 +108,46 @@
 
     </section>
 
-    <!-- KOLOM 2: GRAFIK REKAPAN (5 Cols) -->
-    <section class="col-span-5 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col shadow-xl min-h-0 overflow-hidden">
-      <div class="flex items-center justify-between mb-2 flex-shrink-0">
-        <h3 class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-          <span>📊</span> Visualisasi Tren & Rekapan Layanan
-        </h3>
-        <span class="text-[9px] text-slate-500 font-mono uppercase">Live Chart</span>
-      </div>
+    <!-- KOLOM 2: GRAFIK REKAPAN GANDA (5 Cols) -->
+    <section class="col-span-5 flex flex-col gap-2.5 min-h-0 overflow-hidden">
       
-      <!-- Canvas Chart JS Container -->
-      <div class="flex-1 w-full min-h-0 relative">
-        <canvas id="layananChart"></canvas>
+      <!-- Grafik 1: Perbandingan AIK vs MKWK -->
+      <div class="flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-3 flex flex-col shadow-xl min-h-0 overflow-hidden">
+        <div class="flex items-center justify-between mb-1.5 flex-shrink-0">
+          <h3 class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+            <span>📊</span> Layanan AIK vs MKWK
+          </h3>
+          <span class="text-[9px] text-slate-500 font-mono uppercase">Live Chart</span>
+        </div>
+        <div class="flex-1 w-full min-h-0 relative">
+          <canvas id="layananChart"></canvas>
+        </div>
       </div>
+
+      <!-- Grafik 2: Kinerja / Distribusi Layanan Per Petugas -->
+      <div class="flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-3 flex flex-col shadow-xl min-h-0 overflow-hidden">
+        <div class="flex items-center justify-between mb-1.5 flex-shrink-0">
+          <h3 class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+            <span>👨‍💻</span> Top 5 Petugas Layanan
+          </h3>
+          <span class="text-[9px] text-slate-500 font-mono uppercase">Update Otomatis</span>
+        </div>
+        <div class="flex-1 w-full min-h-0 relative">
+          <canvas id="petugasChart"></canvas>
+        </div>
+      </div>
+
     </section>
 
-    <!-- KOLOM 3: LOG REKAPAN TERBARU DENGAN HARDWARE-ACCELERATED SMOOTH SCROLL (4 Cols) -->
+    <!-- KOLOM 3: LOG REKAPAN TERBARU DENGAN AUTO-SCROLL (4 Cols) -->
     <section class="col-span-4 bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col shadow-xl min-h-0 overflow-hidden">
       <div class="flex items-center justify-between mb-2 border-b border-slate-800 pb-1.5 flex-shrink-0">
         <h3 class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-          <span>📑</span> Daftar Layanan Terdaftar (Live)
+          <span>📑</span> Daftar Layanan Terdaftar
         </h3>
         <span class="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Smooth Scroll</span>
       </div>
 
-      <!-- Wrapper & Animated Scroll Content -->
       <div class="flex-1 relative min-h-0 overflow-hidden">
         <div id="log-feed" class="scroll-container">
           <!-- Item Log -->
@@ -174,6 +178,7 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzriVNdkWu1HikzUlQOtIAurzMeIqLBN-pc5rrN63L0dUlG8ioUzCkVijib24jHc5N7tQ/exec";
 
     let chartInstance = null;
+    let petugasChartInstance = null; // Variabel baru untuk chart petugas
 
     // Format Tanggal
     function formatTanggal(rawDate) {
@@ -192,7 +197,15 @@
       }
     }
 
-    // Pencarian Field Fleksibel Berdasarkan Kata Kunci Kolom
+    // Capitalize nama (M. Alfian -> M. Alfian)
+    function titleCase(str) {
+      if(!str) return '';
+      return str.toLowerCase().split(' ').map(function(word) {
+        return word.replace(word[0], word[0].toUpperCase());
+      }).join(' ');
+    }
+
+    // Pencarian Field Fleksibel
     function getValueByKeyPattern(obj, patterns) {
       if (!obj || typeof obj !== 'object') return null;
       const keys = Object.keys(obj);
@@ -218,7 +231,7 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 2. Fetch Data dari GAS
+    // 2. Fetch Data
     async function fetchData() {
       try {
         const res = await fetch(GAS_URL);
@@ -234,18 +247,20 @@
       }
     }
 
-    // 3. Olah Data KPI & Log
+    // 3. Olah Data
     function processData(rows, totalCount) {
       document.getElementById('stat-total').innerText = totalCount || rows.length;
 
       let countAIK = 0;
       let countMKWK = 0;
       let countToday = 0;
+      let petugasMap = {}; // Penyimpanan hitung per petugas
 
       const now = new Date();
       const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
       rows.forEach(row => {
+        // Hitung Kategori
         const kategoriVal = (getValueByKeyPattern(row, ['kategori', 'jenis layanan', 'layanan', 'keperluan']) || '').toString().toLowerCase();
         const fullRowStr = JSON.stringify(row).toLowerCase();
 
@@ -257,9 +272,19 @@
           countAIK++;
         }
 
+        // Hitung Hari Ini
         const timeVal = getValueByKeyPattern(row, ['timestamp', 'tanggal', 'waktu', 'date']);
         if (timeVal && timeVal.toString().includes(todayStr)) {
           countToday++;
+        }
+
+        // Hitung Petugas
+        let petugas = getValueByKeyPattern(row, ['petugas', 'staf', 'operator', 'admin', 'dilayani oleh', 'penanggung jawab']);
+        if (!petugas || petugas.toString().trim() === '') petugas = 'Belum Ditugaskan';
+        petugas = titleCase(petugas.toString().trim());
+
+        if (petugas !== 'Belum Ditugaskan') { // Opsional: mengabaikan yang kosong
+          petugasMap[petugas] = (petugasMap[petugas] || 0) + 1;
         }
       });
 
@@ -267,11 +292,9 @@
       document.getElementById('stat-mkwk').innerText = countMKWK;
       document.getElementById('stat-today').innerText = countToday;
 
-      // Render Log Feed
+      // Render Data
       renderLogFeed(rows.slice().reverse());
-
-      // Render Chart
-      renderChart(countAIK, countMKWK);
+      renderCharts(countAIK, countMKWK, petugasMap);
     }
 
     // 4. Render Log Feed
@@ -288,18 +311,18 @@
         const timeVal = getValueByKeyPattern(item, ['timestamp', 'tanggal', 'waktu', 'date']) || 'Baru Saja';
         const nameVal = getValueByKeyPattern(item, ['nama lengkap', 'nama', 'pemohon', 'mahasiswa']) || 'Pemohon Layanan';
         const nimVal = getValueByKeyPattern(item, ['nim', 'nidn', 'npm', 'nomor', 'no', 'id']) || '-';
-        const petugasVal = getValueByKeyPattern(item, ['petugas', 'staf', 'operator', 'admin', 'dilayani oleh', 'penanggung jawab']);
-        const ketePetugas = petugasVal ? `Dilayani oleh: <b>${petugasVal}</b>` : `Dilayani oleh: <span class="italic text-slate-500">Belum Ditugaskan</span>`;
+        let petugasVal = getValueByKeyPattern(item, ['petugas', 'staf', 'operator', 'admin', 'dilayani oleh', 'penanggung jawab']);
+        const ketePetugas = petugasVal ? `Dilayani oleh: <b class="text-amber-400">${titleCase(petugasVal)}</b>` : `Dilayani oleh: <span class="italic text-slate-500">Belum Ditugaskan</span>`;
 
         return `
           <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex flex-col justify-between shadow-md flex-shrink-0">
             <div class="flex justify-between items-center text-[10px] font-bold mb-1">
-              <span class="text-amber-400 font-mono">${formatTanggal(timeVal)}</span>
+              <span class="text-blue-400 font-mono">${formatTanggal(timeVal)}</span>
               <span class="text-slate-400 font-mono">NIM: <b class="text-slate-100">${nimVal}</b></span>
             </div>
             <div class="text-xs font-bold text-white truncate mb-1.5">${nameVal}</div>
             <div class="text-[10px] text-slate-400 flex items-center border-t border-slate-800/60 pt-1.5">
-              <span class="text-emerald-400 truncate">${ketePetugas}</span>
+              <span class="text-slate-300 truncate">${ketePetugas}</span>
             </div>
           </div>
         `;
@@ -307,7 +330,6 @@
 
       let htmlContent = allRows.map(item => createCardHtml(item)).join('');
       
-      // Duplikasi list agar loop scrolling CSS berjalan 100% mulus dan kontinu
       if (allRows.length > 2) {
         container.innerHTML = htmlContent + htmlContent;
         const durationSeconds = Math.max(15, allRows.length * 3);
@@ -318,49 +340,69 @@
       }
     }
 
-    // 5. Render Chart.js
-    function renderChart(aikCount, mkwkCount) {
-      const ctx = document.getElementById('layananChart').getContext('2d');
+    // 5. Render Chart JS (Keduanya)
+    function renderCharts(aikCount, mkwkCount, petugasMap) {
+      Chart.defaults.font.family = 'Plus Jakarta Sans';
+      Chart.defaults.color = '#94a3b8';
 
-      if (chartInstance) {
-        chartInstance.destroy();
-      }
+      // --- GRAFIK 1: AIK vs MKWK ---
+      const ctx1 = document.getElementById('layananChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
 
-      chartInstance = new Chart(ctx, {
+      chartInstance = new Chart(ctx1, {
         type: 'bar',
         data: {
-          labels: ['Layanan AIK', 'Layanan MKWK'],
+          labels: ['AIK', 'MKWK'],
           datasets: [{
-            label: 'Jumlah Layanan',
             data: [aikCount, mkwkCount],
-            backgroundColor: [
-              'rgba(59, 130, 246, 0.85)',
-              'rgba(16, 185, 129, 0.85)'
-            ],
-            borderColor: [
-              '#3b82f6',
-              '#10b981'
-            ],
-            borderWidth: 2,
-            borderRadius: 8
+            backgroundColor: ['rgba(59, 130, 246, 0.85)', 'rgba(16, 185, 129, 0.85)'],
+            borderColor: ['#3b82f6', '#10b981'],
+            borderWidth: 1,
+            borderRadius: 6
           }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
           scales: {
-            y: {
-              beginAtZero: true,
-              grid: { color: 'rgba(255, 255, 255, 0.05)' },
-              ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 10 } }
-            },
-            x: {
-              grid: { display: false },
-              ticks: { color: '#e2e8f0', font: { family: 'Plus Jakarta Sans', size: 11, weight: 'bold' } }
-            }
+            y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { font: { size: 10 } } },
+            x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
+          }
+        }
+      });
+
+      // --- GRAFIK 2: PETUGAS (Top 5) ---
+      const ctx2 = document.getElementById('petugasChart').getContext('2d');
+      if (petugasChartInstance) petugasChartInstance.destroy();
+
+      // Urutkan petugas dari yang terbanyak dan ambil maksimal 5 teratas
+      const sortedPetugas = Object.keys(petugasMap)
+        .map(name => ({ name: name, count: petugasMap[name] }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      const pLabels = sortedPetugas.map(p => p.name.substring(0, 15) + (p.name.length > 15 ? '...' : '')); // Limit karakter nama
+      const pData = sortedPetugas.map(p => p.count);
+
+      petugasChartInstance = new Chart(ctx2, {
+        type: 'bar', // Bar horizontal sangat cocok untuk nama-nama
+        data: {
+          labels: pLabels,
+          datasets: [{
+            data: pData,
+            backgroundColor: 'rgba(245, 158, 11, 0.85)', // Amber
+            borderColor: '#f59e0b',
+            borderWidth: 1,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: 'y', // Jadikan Horizontal Bar Chart
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { font: { size: 10 }, stepSize: 1 } },
+            y: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
           }
         }
       });
