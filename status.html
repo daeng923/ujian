@@ -21,7 +21,7 @@
       user-select: none;
     }
 
-    /* ANIMASI CSS HARDWARE ACCELERATED UNTUK SCROLLING TANPA PATAH-PATAH */
+    /* ANIMASI CSS HARDWARE ACCELERATED UNTUK SCROLLING MULUS */
     .scroll-container {
       display: flex;
       flex-direction: column;
@@ -42,11 +42,12 @@
 </head>
 <body class="h-screen w-screen text-slate-100 flex flex-col justify-between p-4 gap-3 overflow-hidden">
 
-  <!-- HEADER TV -->
-  <header class="flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 shadow-2xl backdrop-blur-md flex-shrink-0">
-    <div class="flex items-center gap-3">
-      <div class="w-11 h-11 bg-blue-600 rounded-xl flex items-center justify-center border border-blue-400 shadow-lg shadow-blue-500/30 text-xl">
-        🏛️
+  <!-- HEADER TV WITH LOGO -->
+  <header class="flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shadow-2xl backdrop-blur-md flex-shrink-0">
+    <div class="flex items-center gap-3.5">
+      <!-- Logo Gambar Utama -->
+      <div class="w-12 h-12 bg-slate-950/80 rounded-xl flex items-center justify-center border border-slate-800/80 shadow-md p-1.5 flex-shrink-0">
+        <img src="http://daeng923.github.io/ujian/logomkwk-removebg-preview.png" alt="Logo MKWK" class="w-full h-full object-contain">
       </div>
       <div>
         <h1 class="text-lg font-black tracking-wide text-white uppercase leading-none">REKAPAN LAYANAN AIK & MKWK</h1>
@@ -141,17 +142,18 @@
       <!-- Wrapper & Animated Scroll Content -->
       <div class="flex-1 relative min-h-0 overflow-hidden">
         <div id="log-feed" class="scroll-container">
-          <!-- Item Log dikloning oleh JavaScript -->
+          <!-- Item Log -->
         </div>
       </div>
     </section>
 
   </main>
 
-  <!-- FOOTER TV -->
+  <!-- FOOTER TV WITH SMALL LOGO -->
   <footer class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0">
     <div class="p-2.5 flex items-center justify-between text-xs px-5">
-      <div class="flex items-center gap-3 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+      <div class="flex items-center gap-2.5 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+        <img src="http://daeng923.github.io/ujian/logomkwk-removebg-preview.png" alt="Mini Logo" class="h-4 w-auto object-contain">
         <span class="text-blue-400">MKWK.ORG</span>
         <span>•</span>
         <span>Layanan Akademik Al-Islam, Kemuhammadiyahan & MKWK</span>
@@ -263,7 +265,7 @@
       renderChart(countAIK, countMKWK);
     }
 
-    // 4. Render Log Feed Menggunakan Animasi GPU
+    // 4. Render Log Feed
     function renderLogFeed(allRows) {
       const container = document.getElementById('log-feed');
       container.innerHTML = '';
@@ -273,7 +275,6 @@
         return;
       }
 
-      // Render Item Asli
       const createCardHtml = (item) => {
         const timeVal = getValueByKeyPattern(item, ['timestamp', 'tanggal', 'waktu', 'date']) || 'Baru Saja';
         const nameVal = getValueByKeyPattern(item, ['nama lengkap', 'nama', 'pemohon', 'mahasiswa']) || 'Pemohon Layanan';
@@ -297,10 +298,9 @@
 
       let htmlContent = allRows.map(item => createCardHtml(item)).join('');
       
-      // Duplikasi list agar loop scrolling CSS berjalan 100% mulus dan kontinu tanpa terputus
+      // Duplikasi list untuk infinite smooth scroll
       container.innerHTML = htmlContent + htmlContent;
 
-      // Hitung kecepatan berdasarkan total item (sekitar 3 detik per item agar nyaman dibaca)
       const durationSeconds = Math.max(15, allRows.length * 3);
       container.style.setProperty('--scroll-duration', `${durationSeconds}s`);
     }
