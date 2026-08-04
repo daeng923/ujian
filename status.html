@@ -124,11 +124,11 @@
         </div>
       </div>
 
-      <!-- Grafik 2: Kinerja / Distribusi Layanan Per Petugas -->
+      <!-- Grafik 2: Kinerja / Distribusi Layanan Per Petugas (Semua Petugas) -->
       <div class="flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-3 flex flex-col shadow-xl min-h-0 overflow-hidden">
         <div class="flex items-center justify-between mb-1.5 flex-shrink-0">
           <h3 class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-            <span>👨‍💻</span> Top 5 Petugas Layanan
+            <span>👨‍💻</span> Statistik Layanan Per Petugas
           </h3>
           <span class="text-[9px] text-slate-500 font-mono uppercase">Update Otomatis</span>
         </div>
@@ -178,7 +178,7 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzriVNdkWu1HikzUlQOtIAurzMeIqLBN-pc5rrN63L0dUlG8ioUzCkVijib24jHc5N7tQ/exec";
 
     let chartInstance = null;
-    let petugasChartInstance = null; // Variabel baru untuk chart petugas
+    let petugasChartInstance = null; // Variabel chart petugas
 
     // Format Tanggal
     function formatTanggal(rawDate) {
@@ -197,7 +197,7 @@
       }
     }
 
-    // Capitalize nama (M. Alfian -> M. Alfian)
+    // Capitalize nama
     function titleCase(str) {
       if(!str) return '';
       return str.toLowerCase().split(' ').map(function(word) {
@@ -371,21 +371,20 @@
         }
       });
 
-      // --- GRAFIK 2: PETUGAS (Top 5) ---
+      // --- GRAFIK 2: SEMUA PETUGAS ---
       const ctx2 = document.getElementById('petugasChart').getContext('2d');
       if (petugasChartInstance) petugasChartInstance.destroy();
 
-      // Urutkan petugas dari yang terbanyak dan ambil maksimal 5 teratas
+      // Urutkan petugas dari yang terbanyak tanpa slice/limit
       const sortedPetugas = Object.keys(petugasMap)
         .map(name => ({ name: name, count: petugasMap[name] }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
+        .sort((a, b) => b.count - a.count);
 
-      const pLabels = sortedPetugas.map(p => p.name.substring(0, 15) + (p.name.length > 15 ? '...' : '')); // Limit karakter nama
+      const pLabels = sortedPetugas.map(p => p.name.substring(0, 15) + (p.name.length > 15 ? '...' : ''));
       const pData = sortedPetugas.map(p => p.count);
 
       petugasChartInstance = new Chart(ctx2, {
-        type: 'bar', // Bar horizontal sangat cocok untuk nama-nama
+        type: 'bar',
         data: {
           labels: pLabels,
           datasets: [{
