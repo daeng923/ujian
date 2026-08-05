@@ -249,13 +249,11 @@
     // 3. Olah Data (Dengan Penyaringan Layanan Denda)
     function processData(rows) {
       // --- PROSES FILTERING DENDA ---
-      // Hanya ambil row yang kategori/layanannya TIDAK mengandung kata "denda"
       const filteredRows = rows.filter(row => {
         const kategoriVal = (getValueByKeyPattern(row, ['kategori', 'jenis layanan', 'layanan', 'keperluan']) || '').toString().toLowerCase();
         return !kategoriVal.includes('denda');
       });
 
-      // Update total count berdasarkan data yang sudah bersih dari denda
       document.getElementById('stat-total').innerText = filteredRows.length;
 
       let countAIK = 0;
@@ -324,6 +322,11 @@
         const timeVal = getValueByKeyPattern(item, ['timestamp', 'tanggal', 'waktu', 'date']) || 'Baru Saja';
         const nameVal = getValueByKeyPattern(item, ['nama lengkap', 'nama', 'pemohon', 'mahasiswa']) || 'Pemohon Layanan';
         const nimVal = getValueByKeyPattern(item, ['nim', 'nidn', 'npm', 'nomor', 'no', 'id']) || '-';
+        
+        // Ambil Kategori Layanan
+        const layananVal = getValueByKeyPattern(item, ['kategori', 'jenis layanan', 'layanan', 'keperluan']) || 'Pengajuan Layanan';
+        
+        // Ambil Nama Petugas
         let petugasVal = getValueByKeyPattern(item, ['petugas', 'staf', 'operator', 'admin', 'dilayani oleh', 'penanggung jawab']);
         const ketePetugas = petugasVal ? `Dilayani oleh: <b class="text-amber-400">${titleCase(petugasVal)}</b>` : `Dilayani oleh: <span class="italic text-slate-500">Belum Ditugaskan</span>`;
 
@@ -333,7 +336,14 @@
               <span class="text-blue-400 font-mono">${formatTanggal(timeVal)}</span>
               <span class="text-slate-400 font-mono">NIM: <b class="text-slate-100">${nimVal}</b></span>
             </div>
-            <div class="text-xs font-bold text-white truncate mb-1.5">${nameVal}</div>
+            
+            <div class="text-xs font-bold text-white truncate mb-1">${titleCase(nameVal)}</div>
+            
+            <div class="text-[10px] text-slate-300 truncate mb-1.5 flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+              <span class="truncate">${titleCase(layananVal)}</span>
+            </div>
+            
             <div class="text-[10px] text-slate-400 flex items-center border-t border-slate-800/60 pt-1.5">
               <span class="text-slate-300 truncate">${ketePetugas}</span>
             </div>
