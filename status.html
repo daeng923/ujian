@@ -164,7 +164,7 @@
         <div class="bg-white p-0.5 rounded flex items-center justify-center">
           <img src="logomkwk-removebg-preview.png" alt="Mini Logo" class="h-3.5 w-auto object-contain">
         </div>
-        <span class="text-blue-400">MKWK.ORG</span>
+        <span class="text-blue-400">AIK.UMM.AC.ID</span>
         <span>•</span>
         <span>Layanan Akademik Al-Islam, Kemuhammadiyahan & MKWK</span>
       </div>
@@ -256,8 +256,14 @@
       let countToday = 0;
       let petugasMap = {};
 
+      // Siapkan format tanggal fleksibel untuk mengecek "Hari Ini"
       const now = new Date();
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const tgl = String(now.getDate()).padStart(2, '0');
+      const bln = String(now.getMonth() + 1).padStart(2, '0');
+      const thn = now.getFullYear();
+      
+      const formatID = `${tgl}/${bln}/${thn}`; // Cth: 05/08/2026 (Format dari Google Apps Script Anda)
+      const formatISO = `${thn}-${bln}-${tgl}`; // Cth: 2026-08-05
 
       rows.forEach(row => {
         // Hitung Kategori
@@ -274,8 +280,12 @@
 
         // Hitung Hari Ini
         const timeVal = getValueByKeyPattern(row, ['timestamp', 'tanggal', 'waktu', 'date']);
-        if (timeVal && timeVal.toString().includes(todayStr)) {
-          countToday++;
+        if (timeVal) {
+          const strTime = timeVal.toString();
+          // Cek kecocokan dengan format DD/MM/YYYY atau YYYY-MM-DD
+          if (strTime.includes(formatID) || strTime.includes(formatISO)) {
+            countToday++;
+          }
         }
 
         // Hitung Petugas
@@ -387,11 +397,11 @@
           labels: pLabels,
           datasets: [{
             data: pData,
-            backgroundColor: 'rgba(245, 158, 11, 0.85)', // Amber
+            backgroundColor: 'rgba(245, 158, 11, 0.85)',
             borderColor: '#f59e0b',
             borderWidth: 1,
             borderRadius: 6,
-            barPercentage: 0.8 // Memberi sedikit ruang antar bar
+            barPercentage: 0.8
           }]
         },
         options: {
@@ -408,8 +418,8 @@
             y: { 
               grid: { display: false }, 
               ticks: { 
-                autoSkip: false, // MEMAKSA SEMUA NAMA MUNCUL (TIDAK ADA YANG DI-SKIP)
-                font: { size: 9, weight: 'bold' } // MENGEKECILKAN FONT SIZE
+                autoSkip: false,
+                font: { size: 9, weight: 'bold' }
               } 
             }
           }
